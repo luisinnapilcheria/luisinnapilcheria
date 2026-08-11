@@ -2,8 +2,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./models/User');
 
-const adminEmail = 'cosmetics.beauty.ambar@gmail.com';
-const adminPassword = 'ambar123456';
+const adminEmail = process.env.ADMIN_EMAIL || 'luisinnaindumentaria@gmail.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'Luisinna123456';
 
 const runSeed = async () => {
   try {
@@ -19,10 +19,11 @@ const runSeed = async () => {
     // PASAMOS LA CONTRASEÑA EN TEXTO PLANO
     // El hook .pre('save') de User.js la encriptará automáticamente una sola vez
     const newAdmin = await User.create({
-      name: 'Dueña Ámbar Cosmetics',
+      name: 'Dueña Luisinna Indumentaria',
       email: adminEmail,
       password: adminPassword,
-      role: 'admin'
+      role: 'admin',
+      isAdmin: true
     });
 
     console.log('==================================================');
