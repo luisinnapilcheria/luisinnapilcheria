@@ -1,8 +1,11 @@
-cosmeticsbeautyambar_db_user
-dutrJNOINgxqEQ7V
+luisinnaindumentaria@gmail.com
+Luisinna123456
 
-mongodb+srv://cosmeticsbeautyambar_db_user:dutrJNOINgxqEQ7V@ambarcosmetics.zeyxoyx.mongodb.net/?appName=Ambarcosmetics
+luisinnaindumentaria_db_user
+Efz2LrTe40OJFL6D
 
-https://github.com/cosmeticsbeautyambar/ambarcosmetics.git
+mongodb+srv://luisinnaindumentaria_db_user:Efz2LrTe40OJFL6D@luisinnaindumentaria.mxtshkq.mongodb.net/?appName=Luisinnaindumentaria
+
+https://github.com/luisinnaindumentaria/luisinnaindumentaria.git
 
 .\push.bat
