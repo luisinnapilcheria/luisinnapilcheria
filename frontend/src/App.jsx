@@ -53,16 +53,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col font-sans">
       {/* NAVBAR DE NAVEGACIÓN */}
-      <nav className="bg-stone-900 text-stone-300 py-2.5 px-4 sm:px-8 text-xs font-semibold uppercase tracking-[0.15em] border-b border-stone-800 sticky top-0 z-[100] flex justify-between items-center shadow-md">
-        
-        {/* LOGO */}
-        <div 
-          onClick={() => navigate('/')} 
-          className="cursor-pointer text-white hover:text-rose-200 transition flex items-center gap-2 text-xs sm:text-sm font-bold"
-        >
-          <span>👗</span>
-          <span>Luisinna Indumentaria</span>
-        </div>
+      <nav className="bg-stone-900 text-stone-300 py-2.5 px-4 sm:px-8 text-xs font-semibold uppercase tracking-[0.15em] border-b border-stone-800 sticky top-0 z-[100] flex justify-end items-center shadow-md">
 
         {/* NAVEGACIÓN */}
         <div className="flex items-center space-x-3 sm:space-x-5 text-[11px]">

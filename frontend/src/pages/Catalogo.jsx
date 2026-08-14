@@ -15,8 +15,9 @@ const getCleanApiUrl = () => {
 
 const API_URL = getCleanApiUrl();
 
-const SafeImage = ({ src, alt, className = "", fit = "cover" }) => {
+const SafeImage = ({ src, alt, className = "", fit = "contain" }) => {
   const [error, setError] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
 
   if (error || !src) {
     return (
@@ -27,15 +28,20 @@ const SafeImage = ({ src, alt, className = "", fit = "cover" }) => {
     );
   }
 
-  const objectFitClass = fit === "contain" ? "object-contain" : "object-cover";
-
   return (
-    <div className={`overflow-hidden relative w-full h-full flex items-center justify-center ${className}`}>
+    <div className={`overflow-hidden relative w-full h-full flex items-center justify-center bg-stone-50/30 ${className}`}>
       <img
         src={src}
         alt={alt}
         onError={() => setError(true)}
-        className={`w-full h-full ${objectFitClass} object-center transition-transform duration-300 group-hover:scale-105`}
+        onLoad={(e) => {
+          if (e.target.naturalHeight > e.target.naturalWidth) {
+            setIsPortrait(true);
+          }
+        }}
+        className={`w-full h-full ${
+          isPortrait || fit === "contain" ? 'object-contain p-1' : 'object-cover'
+        } object-center transition-transform duration-300 group-hover:scale-105`}
         loading="lazy"
       />
     </div>
@@ -227,9 +233,9 @@ export default function Catalogo() {
                 onClick={() => setModalProduct(item)}
                 className="bg-white rounded-xs border border-rose-100 shadow-2xs hover:border-rose-300 transition duration-300 flex flex-col overflow-hidden group cursor-pointer"
               >
-                {/* MARCO DE IMAGEN */}
-                <div className="relative aspect-square w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
-                  <SafeImage src={item.image} alt={item.name} fit="cover" />
+                {/* MARCO DE IMAGEN CON AUTO-AJUSTE */}
+                <div className="relative h-64 sm:h-72 w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
+                  <SafeImage src={item.image} alt={item.name} fit="contain" />
                   
                   {item.destacado && (
                     <span className="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider z-10">
@@ -302,13 +308,13 @@ export default function Catalogo() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-y-auto">
               
-              {/* IMAGEN DEL MODAL */}
-              <div className="md:col-span-6 bg-stone-100 p-4 flex items-center justify-center min-h-[260px] sm:min-h-[400px]">
+              {/* IMAGEN DEL MODAL CON AJUSTE COMPLETO */}
+              <div className="md:col-span-6 bg-stone-50 p-4 flex items-center justify-center h-80 sm:h-[450px]">
                 <SafeImage
                   src={modalProduct.detailImage || modalProduct.image}
                   alt={modalProduct.name}
-                  fit="cover"
-                  className="w-full h-full max-h-[420px] object-cover"
+                  fit="contain"
+                  className="w-full h-full"
                 />
               </div>
 
