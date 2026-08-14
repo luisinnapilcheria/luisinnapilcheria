@@ -500,6 +500,7 @@ export default function AdminPanel() {
                   <option value="Sweaters">Sweaters</option>
                   <option value="Polleras">Polleras</option>
                   <option value="Camperas">Camperas</option>
+                  <option value="Camperas">Jeans</option>
                   <option value="Otros">Otros</option>
                 </select>
               </div>

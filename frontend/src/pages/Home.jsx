@@ -32,6 +32,7 @@ const API_URL = getCleanApiUrl();
 
 const SafeImage = ({ src, alt, className = "", fit = "cover" }) => {
   const [error, setError] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
 
   if (error || !src) {
     return (
@@ -42,15 +43,20 @@ const SafeImage = ({ src, alt, className = "", fit = "cover" }) => {
     );
   }
 
-  const objectFitClass = fit === "contain" ? "object-contain" : "object-cover";
-
   return (
-    <div className={`overflow-hidden relative w-full h-full flex items-center justify-center ${className}`}>
+    <div className={`overflow-hidden relative w-full h-full flex items-center justify-center bg-stone-100/50 ${className}`}>
       <img
         src={src}
         alt={alt}
         onError={() => setError(true)}
-        className={`w-full h-full ${objectFitClass} object-center transition-transform duration-300 group-hover:scale-105`}
+        onLoad={(e) => {
+          if (e.target.naturalHeight > e.target.naturalWidth) {
+            setIsPortrait(true);
+          }
+        }}
+        className={`w-full h-full ${
+          isPortrait ? 'object-contain p-1' : fit === 'contain' ? 'object-contain' : 'object-cover'
+        } object-center transition-transform duration-300 group-hover:scale-105`}
         loading="lazy"
       />
     </div>
@@ -81,7 +87,7 @@ export default function Home() {
   const navigate = useNavigate();
   const searchContainerRef = useRef(null);
 
-  // TITULO DE LA PESTAÑA DEL NAVEGADOR
+  // TÍTULO DE LA PESTAÑA DEL NAVEGADOR
   useEffect(() => {
     document.title = "Luisinna Indumentaria";
   }, []);
@@ -118,8 +124,9 @@ export default function Home() {
       )
     : [];
 
+  // GRUPOS DE 5 PRODUCTOS PARA EL CARRETE DE EXTREMO A EXTREMO
   const productsWithImages = allProducts.filter((p) => p.image);
-  const photoGroups = chunkArray(productsWithImages, 3);
+  const photoGroups = chunkArray(productsWithImages, 5);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -187,7 +194,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-800 font-sans antialiased relative">
 
-      {/* 0. BARRA SUPERIOR DE ANUNCIOS (SIN EL NOMBRE DUPLICADO) */}
+      {/* 0. BARRA SUPERIOR DE ANUNCIOS */}
       <div className="bg-stone-900 text-rose-100 py-2 px-4 text-center text-[10px] md:text-xs font-medium tracking-wider uppercase flex justify-center items-center gap-6">
         <div className="flex items-center gap-1.5">
           <span>💸</span>
@@ -286,9 +293,9 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* 2. HERO BANNER - CARRETE TRIPLE DINÁMICO DESDE CATÁLOGO */}
-      <section className="w-full bg-stone-100 pt-4 pb-6 border-b border-rose-200/40 shadow-inner">
-        <div className="w-full max-w-7xl mx-auto px-2 md:px-6">
+      {/* 2. HERO BANNER - CARRETE DE 5 FOTOS DE EXTREMO A EXTREMO Y MAYOR ALTURA */}
+      <section className="w-full bg-stone-100 pt-2 pb-6 border-b border-rose-200/40 shadow-inner">
+        <div className="w-full px-0">
           
           {photoGroups.length > 0 ? (
             <Swiper
@@ -305,18 +312,19 @@ export default function Home() {
             >
               {photoGroups.map((group, groupIndex) => (
                 <SwiperSlide key={groupIndex} className="pb-6">
-                  <div className="grid grid-cols-3 gap-1 md:gap-2 h-44 sm:h-56 md:h-64 overflow-hidden shadow-sm rounded-xs border border-stone-200 bg-white">
+                  {/* Grid de 5 columnas con altura incrementada */}
+                  <div className="grid grid-cols-5 gap-0.5 sm:gap-1 h-64 sm:h-80 md:h-[420px] w-full overflow-hidden shadow-xs bg-stone-200 border-y border-stone-200">
                     {group.map((product) => (
                       <div 
                         key={product._id} 
                         onClick={() => handleSelectProduct(product._id)}
-                        className="relative w-full h-full overflow-hidden group cursor-pointer border-r border-stone-200 last:border-r-0"
+                        className="relative w-full h-full overflow-hidden group cursor-pointer border-r border-stone-200 last:border-r-0 bg-white"
                       >
                         <SafeImage 
                           src={product.image} 
                           alt={product.name} 
                           fit="cover" 
-                          className="w-full h-full object-cover object-center transform group-hover:scale-105 transition duration-700 ease-in-out"
+                          className="w-full h-full transform group-hover:scale-105 transition duration-700 ease-in-out"
                         />
                         <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-stone-900/0 transition duration-300 pointer-events-none" />
                       </div>
@@ -326,12 +334,12 @@ export default function Home() {
               ))}
             </Swiper>
           ) : (
-            <div className="h-44 sm:h-56 bg-white border border-stone-200 rounded-xs flex items-center justify-center text-stone-400 text-xs uppercase tracking-widest">
+            <div className="h-64 sm:h-80 bg-white border-y border-stone-200 flex items-center justify-center text-stone-400 text-xs uppercase tracking-widest">
               Aún no hay productos cargados con foto en el catálogo
             </div>
           )}
 
-          <div className="text-center space-y-2 pt-2">
+          <div className="text-center space-y-2 pt-4 px-4 max-w-3xl mx-auto">
             <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-rose-800 block">
               Moda & Estilo Femenino
             </span>
