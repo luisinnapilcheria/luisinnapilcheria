@@ -42,9 +42,9 @@ const SafeImage = ({ src, alt, className = "" }) => {
 export default function AdminPanel() {
   const authContext = useContext(AuthContext);
 
-  const getStoredToken = () => {
+  // Estados de Autenticación Local
+  const [token, setToken] = useState(() => {
     if (authContext?.token) return authContext.token;
-
     try {
       const rawUserInfo = localStorage.getItem('userInfo');
       if (rawUserInfo) {
@@ -52,13 +52,17 @@ export default function AdminPanel() {
         if (parsedUser.token) return parsedUser.token;
       }
     } catch (e) {
-      console.error("Error al leer userInfo de localStorage:", e);
+      console.error("Error al leer userInfo:", e);
     }
+    return localStorage.getItem('token') || localStorage.getItem('userToken') || null;
+  });
 
-    return localStorage.getItem('token') || localStorage.getItem('userToken') || localStorage.getItem('jwt') || null;
-  };
+  const [loginEmail, setLoginEmail] = useState('luisinnaindumentaria@gmail.com');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // 🌟 Navegación de Pestañas ('products' | 'orders')
+  // Navegación de Pestañas ('products' | 'orders')
   const [activeTab, setActiveTab] = useState('products');
 
   // Estados de Productos
@@ -85,6 +89,35 @@ export default function AdminPanel() {
     destacado: false
   });
 
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        if (authContext?.login) authContext.login(data);
+      } else {
+        setLoginError(data.message || 'Credenciales incorrectas');
+      }
+    } catch (err) {
+      setLoginError('Error de conexión con el servidor.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   // Cargar Productos
   const loadProducts = async () => {
     setLoading(true);
@@ -101,14 +134,22 @@ export default function AdminPanel() {
     }
   };
 
-  // Cargar Pedidos
+  // Cargar Pedidos (Con cabecera Authorization)
   const loadOrders = async () => {
+    if (!token) return;
     setOrdersLoading(true);
     try {
-      const res = await fetch(`${API_URL}/orders`);
+      const res = await fetch(`${API_URL}/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
+      } else if (res.status === 401 || res.status === 403) {
+        setToken(null);
+        localStorage.removeItem('token');
       }
     } catch (err) {
       console.error("Error al cargar pedidos:", err);
@@ -119,15 +160,16 @@ export default function AdminPanel() {
 
   useEffect(() => {
     loadProducts();
-    loadOrders();
-  }, []);
+    if (token) {
+      loadOrders();
+    }
+  }, [token]);
 
   // Cambiar estado de un pedido
   const handleOrderStatusChange = async (orderId, newStatus) => {
     try {
-      const activeToken = getStoredToken();
       const headers = { 'Content-Type': 'application/json' };
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'PATCH',
@@ -137,7 +179,7 @@ export default function AdminPanel() {
 
       if (res.ok) {
         await loadOrders();
-        await loadProducts(); // Recarga productos por si cambió el stock
+        await loadProducts();
       } else {
         alert("No se pudo actualizar el estado de la orden.");
       }
@@ -225,12 +267,8 @@ export default function AdminPanel() {
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
-      const activeToken = getStoredToken();
       const headers = { 'Content-Type': 'application/json' };
-
-      if (activeToken) {
-        headers['Authorization'] = `Bearer ${activeToken}`;
-      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch(url, {
         method: method,
@@ -255,9 +293,7 @@ export default function AdminPanel() {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que querés eliminar este producto?')) return;
 
-    const activeToken = getStoredToken();
-
-    if (!activeToken) {
+    if (!token) {
       alert("⚠️ No estás logueado o tu sesión expiró. Volvé a iniciar sesión.");
       return;
     }
@@ -267,14 +303,15 @@ export default function AdminPanel() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeToken}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
       if (res.ok) {
         loadProducts();
-      } else if (res.status === 401) {
+      } else if (res.status === 401 || res.status === 403) {
         alert('❌ No tenés autorización para eliminar. Volvé a iniciar sesión.');
+        setToken(null);
       } else {
         alert('No se pudo eliminar el producto.');
       }
@@ -294,13 +331,65 @@ export default function AdminPanel() {
     const pA = priority[a.status] || 99;
     const pB = priority[b.status] || 99;
 
-    if (pA !== pB) {
-      return pA - pB;
-    }
+    if (pA !== pB) return pA - pB;
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const pendingCount = orders.filter(o => o.status === 'pendiente_pago').length;
+
+  // SI NO HAY TOKEN, SE MUESTRA EL FORMULARIO DE ACCESO AL PANEL
+  if (!token) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="bg-white border border-rose-200 p-6 md:p-8 rounded-xl shadow-lg max-w-md w-full space-y-4 text-xs">
+          <div className="text-center space-y-1">
+            <span className="text-3xl">🔐</span>
+            <h2 className="text-base font-bold text-stone-900 uppercase tracking-wider">Acceso al Panel de Control</h2>
+            <p className="text-stone-500">Ingresá tus datos de administradora para continuar.</p>
+          </div>
+
+          {loginError && (
+            <div className="bg-rose-100 text-rose-800 p-2.5 rounded-lg text-center font-semibold border border-rose-300">
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLoginSubmit} className="space-y-3">
+            <div>
+              <label className="block font-semibold mb-1 text-stone-700">Correo Electrónico</label>
+              <input
+                type="email"
+                required
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1 text-stone-700">Contraseña</label>
+              <input
+                type="password"
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-stone-900 hover:bg-stone-800 text-white py-3 rounded-lg font-bold uppercase tracking-wider transition shadow-xs cursor-pointer mt-2"
+            >
+              {isLoggingIn ? 'Verificando...' : 'Ingresar al Panel'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 font-sans">
@@ -310,7 +399,7 @@ export default function AdminPanel() {
         <div className="flex border-b sm:border-b-0 border-stone-200 gap-2">
           <button
             onClick={() => setActiveTab('products')}
-            className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 ${
+            className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 cursor-pointer ${
               activeTab === 'products'
                 ? 'border-stone-900 text-stone-900'
                 : 'border-transparent text-stone-400 hover:text-stone-700'
@@ -323,7 +412,7 @@ export default function AdminPanel() {
               setActiveTab('orders');
               loadOrders();
             }}
-            className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
+            className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'orders'
                 ? 'border-stone-900 text-stone-900'
                 : 'border-transparent text-stone-400 hover:text-stone-700'
@@ -338,11 +427,24 @@ export default function AdminPanel() {
           </button>
         </div>
 
-        {activeTab === 'orders' && pendingCount > 0 && (
-          <span className="text-xs bg-rose-100 text-rose-900 border border-rose-300 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
-            ⚠️ Tenés {pendingCount} pedido(s) pendiente(s) de atención
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {activeTab === 'orders' && pendingCount > 0 && (
+            <span className="text-xs bg-rose-100 text-rose-900 border border-rose-300 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+              ⚠️ Tenés {pendingCount} pedido(s) pendiente(s)
+            </span>
+          )}
+
+          <button
+            onClick={() => {
+              setToken(null);
+              localStorage.removeItem('token');
+              localStorage.removeItem('userInfo');
+            }}
+            className="text-xs text-rose-700 hover:text-rose-900 font-semibold underline cursor-pointer"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
 
       {/* ================= PESTAÑA 1: INVENTARIO DE PRODUCTOS ================= */}
@@ -363,7 +465,7 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1.5 rounded-lg font-semibold transition"
+                  className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer"
                 >
                   ❌ Cancelar Edición
                 </button>
@@ -453,7 +555,7 @@ export default function AdminPanel() {
                     <button
                       type="button"
                       onClick={() => setImageMode('file')}
-                      className={`px-2 py-1 rounded font-semibold transition ${
+                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
                         imageMode === 'file'
                           ? 'bg-stone-900 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
@@ -464,7 +566,7 @@ export default function AdminPanel() {
                     <button
                       type="button"
                       onClick={() => setImageMode('url')}
-                      className={`px-2 py-1 rounded font-semibold transition ${
+                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
                         imageMode === 'url'
                           ? 'bg-stone-900 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
@@ -523,7 +625,7 @@ export default function AdminPanel() {
                     <button
                       type="button"
                       onClick={() => setDetailImageMode('file')}
-                      className={`px-2 py-1 rounded font-semibold transition ${
+                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
                         detailImageMode === 'file'
                           ? 'bg-rose-800 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
@@ -534,7 +636,7 @@ export default function AdminPanel() {
                     <button
                       type="button"
                       onClick={() => setDetailImageMode('url')}
-                      className={`px-2 py-1 rounded font-semibold transition ${
+                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
                         detailImageMode === 'url'
                           ? 'bg-rose-800 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
@@ -600,7 +702,7 @@ export default function AdminPanel() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-3 text-white font-bold rounded-lg uppercase tracking-wider text-xs transition shadow-xs ${
+                  className={`w-full py-3 text-white font-bold rounded-lg uppercase tracking-wider text-xs transition shadow-xs cursor-pointer ${
                     isSubmitting
                       ? 'bg-stone-400 cursor-not-allowed'
                       : editingId
@@ -684,14 +786,14 @@ export default function AdminPanel() {
                           <div className="flex justify-center items-center gap-1.5">
                             <button
                               onClick={() => handleEditClick(item)}
-                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-md font-semibold transition"
+                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-md font-semibold transition cursor-pointer"
                               title="Editar"
                             >
                               ✏️
                             </button>
                             <button
                               onClick={() => handleDelete(item._id)}
-                              className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md font-semibold transition"
+                              className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md font-semibold transition cursor-pointer"
                               title="Eliminar"
                             >
                               🗑️
@@ -723,7 +825,7 @@ export default function AdminPanel() {
             </div>
             <button
               onClick={loadOrders}
-              className="text-xs bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg font-semibold transition self-start sm:self-auto"
+              className="text-xs bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg font-semibold transition self-start sm:self-auto cursor-pointer"
             >
               🔄 Actualizar Listado
             </button>
@@ -847,7 +949,7 @@ export default function AdminPanel() {
                       
                       <button
                         onClick={() => copyShippingData(order)}
-                        className="bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1"
+                        className="bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer"
                       >
                         <span>📋</span>
                         <span>{copiedId === order._id ? '¡Etiqueta Copiada!' : 'Copiar Etiqueta de Envío'}</span>
@@ -862,7 +964,7 @@ export default function AdminPanel() {
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
                             isPending
                               ? 'bg-rose-200 text-rose-900 cursor-default opacity-60'
-                              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           ⏳ Recibido
@@ -874,7 +976,7 @@ export default function AdminPanel() {
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
                             isPaid
                               ? 'bg-blue-200 text-blue-900 cursor-default opacity-60'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           💳 Cobrado
@@ -886,7 +988,7 @@ export default function AdminPanel() {
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
                             isDispatched
                               ? 'bg-emerald-200 text-emerald-900 cursor-default opacity-60'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           🚚 Despachado
@@ -895,7 +997,7 @@ export default function AdminPanel() {
                         {!isCanceled && (
                           <button
                             onClick={() => handleOrderStatusChange(order._id, 'cancelado')}
-                            className="bg-stone-200 hover:bg-rose-100 hover:text-rose-700 text-stone-600 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition"
+                            className="bg-stone-200 hover:bg-rose-100 hover:text-rose-700 text-stone-600 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition cursor-pointer"
                           >
                             ❌
                           </button>

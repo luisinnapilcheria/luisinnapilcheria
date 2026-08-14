@@ -2,7 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secretkey_ambar_2026', { expiresIn: '30d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'secretkey_luisinna_2026', { expiresIn: '30d' });
 };
 
 // Registro de usuarios clientes (Forzado a role: 'user')
