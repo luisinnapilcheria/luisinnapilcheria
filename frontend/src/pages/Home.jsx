@@ -81,6 +81,11 @@ export default function Home() {
   const navigate = useNavigate();
   const searchContainerRef = useRef(null);
 
+  // TITULO DE LA PESTAÑA DEL NAVEGADOR
+  useEffect(() => {
+    document.title = "Luisinna Indumentaria";
+  }, []);
+
   // CARGAR PRODUCTOS DESDE LA API
   useEffect(() => {
     fetch(`${API_URL}/products`)
@@ -96,7 +101,7 @@ export default function Home() {
       .catch((err) => console.warn("Aviso productos:", err.message));
   }, []);
 
-  // ROTACIÓN AUTOMÁTICA EN ÚLTIMOS LANZAMIENTOS CADA 5 SEGUNDOS
+  // ROTACIÓN AUTOMÁTICA EN ÚLTIMOS LANZAMIENTOS
   useEffect(() => {
     if (latestProducts.length <= 3) return;
 
@@ -107,14 +112,12 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [latestProducts]);
 
-  // CÁLCULO DE LOS 3 PRODUCTOS VISIBLES EN ÚLTIMOS LANZAMIENTOS
   const visibleProducts = latestProducts.length > 0
     ? Array.from({ length: Math.min(3, latestProducts.length) }, (_, i) => 
         latestProducts[(currentIndex + i) % latestProducts.length]
       )
     : [];
 
-  // OBTENER PRODUCTOS CON IMAGEN PARA EL CARRETE TRIPLE
   const productsWithImages = allProducts.filter((p) => p.image);
   const photoGroups = chunkArray(productsWithImages, 3);
 
@@ -184,23 +187,25 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-800 font-sans antialiased relative">
 
-      {/* 0. BARRA SUPERIOR DE ANUNCIOS / PROMO */}
-      <div className="bg-stone-900 text-rose-100 py-2 px-4 text-center text-[10px] md:text-xs font-medium tracking-wider uppercase flex flex-wrap justify-center items-center gap-x-3 gap-y-0.5">
-        <div className="flex items-center gap-1.5">
+      {/* 0. BARRA SUPERIOR DE ANUNCIOS / PROMO CORREGIDA */}
+      <div className="bg-stone-900 text-rose-100 py-2 px-4 text-center text-[10px] md:text-xs font-medium tracking-wider uppercase flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center gap-1.5 font-bold tracking-widest text-rose-200">
           <span>✨</span>
+          <span>LUISINNA INDUMENTARIA</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span>💸</span>
           <span>
-            <strong>10% OFF</strong> en tu primera compra o en compras a partir de <strong>$50.000</strong>
+            <strong>15% OFF</strong> con transferencia en cada prenda
           </span>
         </div>
-        <span className="hidden md:inline text-rose-300">•</span>
-        <div className="flex items-center gap-1.5 text-rose-200">
+        <div className="hidden md:flex items-center gap-1.5 text-rose-200">
           <span>👑</span>
-          <span>Indumentaria Femenina & Tendencias • <strong>Envíos a todo el país</strong></span>
-          <span>✨</span>
+          <span>Envíos a todo el país</span>
         </div>
       </div>
 
-      {/* 1. HEADER & NAVBAR CON BUSCADOR RESTAURADO */}
+      {/* 1. HEADER & NAVBAR CON BUSCADOR */}
       <header className="sticky top-0 z-50 border-b border-rose-200/60 shadow-xs" style={{ backgroundColor: '#fce4ec' }}>
         <div className="max-w-6xl mx-auto px-6 py-2.5 flex justify-between items-center gap-4">
           
@@ -217,7 +222,7 @@ export default function Home() {
             </div>
           </div>
           
-          {/* BUSCADOR RESTAURADO Y OPERATIVO */}
+          {/* BUSCADOR OPERATIVO */}
           <div className="w-full max-w-xs md:max-w-md relative" ref={searchContainerRef}>
             <form 
               onSubmit={handleSearchSubmit} 
@@ -236,7 +241,7 @@ export default function Home() {
               </button>
             </form>
 
-            {/* DESPLEGABLE CON RESULTADOS DE BÚSQUEDA */}
+            {/* DESPLEGABLE CON RESULTADOS */}
             {showDropdown && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-rose-200 shadow-xl rounded-xs z-50 max-h-64 overflow-y-auto divide-y divide-rose-50">
                 {searchResults.length > 0 ? (
@@ -353,7 +358,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. ÚLTIMOS LANZAMIENTOS (ROTATIVO ENTRE LOS ÚLTIMOS PRODUCTOS) */}
+      {/* 3. ÚLTIMOS LANZAMIENTOS */}
       <section id="ultimos-lanzamientos" className="max-w-4xl mx-auto px-6 py-8 scroll-mt-24">
         <div className="flex items-center justify-center gap-2 mb-6">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse"></span>
@@ -367,12 +372,10 @@ export default function Home() {
             {visibleProducts.map((item) => (
               <div key={item._id} className="bg-white border border-rose-100 p-3 rounded-xs relative flex flex-col justify-between shadow-2xs hover:border-rose-300 transition duration-300 group">
                 
-                {/* ETIQUETA "NUEVO" */}
                 <span className="absolute top-2.5 right-2.5 z-10 bg-rose-500 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-xs uppercase tracking-wider">
                   Nuevo
                 </span>
 
-                {/* MARCO DE IMAGEN */}
                 <div className="relative h-44 sm:h-48 w-full bg-stone-50 p-1 rounded-xs mb-3 overflow-hidden border border-stone-100 flex items-center justify-center">
                   <SafeImage src={item.image} alt={item.name} fit="cover" />
                 </div>
@@ -401,7 +404,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* 4. FOOTER */}
+      {/* 4. FOOTER CORREGIDO CON EL NUEVO NÚMERO Y BENEFICIO */}
       <footer className="bg-stone-100 border-t border-stone-200 text-xs">
         <div className="bg-stone-900 text-stone-100 py-6 px-6">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
@@ -409,10 +412,10 @@ export default function Home() {
               <span className="text-2xl">🛍️</span>
               <div>
                 <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-rose-200">
-                  Descuentos Especiales & Venta Especial
+                  Descuento Exclusivo
                 </h3>
                 <p className="text-xs text-stone-300 font-light mt-0.5">
-                  Aprovechá un <span className="text-white font-semibold underline underline-offset-2">10% OFF</span> en tu primera compra o al superar los <span className="text-white font-semibold">$50.000</span>.
+                  Aprovechá un <span className="text-white font-semibold underline underline-offset-2">15% OFF</span> abonando con transferencia bancaria en cada prenda.
                 </p>
               </div>
             </div>
@@ -429,7 +432,7 @@ export default function Home() {
           <div className="space-y-2">
             <h4 className="font-bold uppercase tracking-wider text-stone-900 text-[10px]">Atención al Cliente</h4>
             <p className="flex items-center gap-2">
-              📞 <a href="https://wa.me/5493482385840" target="_blank" rel="noreferrer" className="hover:text-stone-900 transition">+54 9 3482 38-5840</a>
+              📞 <a href="https://wa.me/5493482202857" target="_blank" rel="noreferrer" className="hover:text-stone-900 transition">+54 9 3482 20-2857</a>
             </p>
             <p className="flex items-center gap-2">
               ✉️ <a href="mailto:luisinnaindumentaria@gmail.com" className="hover:text-stone-900 transition">luisinnaindumentaria@gmail.com</a>
@@ -468,9 +471,9 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 5. BOTÓN FLOTANTE WHATSAPP */}
+      {/* 5. BOTÓN FLOTANTE WHATSAPP CON EL NUEVO NÚMERO */}
       <a 
-        href="https://wa.me/5493482385840" 
+        href="https://wa.me/5493482202857" 
         target="_blank" 
         rel="noreferrer" 
         className="fixed bottom-6 right-6 bg-stone-900 text-white w-12 h-12 rounded-full shadow-md hover:bg-stone-800 transition flex items-center justify-center text-lg z-50 border border-stone-700"

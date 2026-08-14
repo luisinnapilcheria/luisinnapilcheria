@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://ambarcosmetics-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1];
@@ -14,20 +15,19 @@ const getCleanApiUrl = () => {
 
 const API_URL = getCleanApiUrl();
 
-// 🌟 SafeImage totalmente ajustado para no romper marcos
-const SafeImage = ({ src, alt, className = "", fit = "contain" }) => {
+const SafeImage = ({ src, alt, className = "", fit = "cover" }) => {
   const [error, setError] = useState(false);
 
   if (error || !src) {
     return (
-      <div className={`bg-stone-100 flex flex-col items-center justify-center text-stone-400 text-[10px] sm:text-xs select-none rounded-xl border border-stone-200 ${className}`}>
-        <span className="text-xl sm:text-3xl mb-1">🖼️</span>
+      <div className={`bg-rose-50/50 flex flex-col items-center justify-center text-stone-400 text-[10px] sm:text-xs select-none rounded-xs border border-rose-100 ${className}`}>
+        <span className="text-2xl sm:text-3xl mb-1">👗</span>
         <span>Sin foto</span>
       </div>
     );
   }
 
-  const objectFitClass = fit === "cover" ? "object-cover" : "object-contain";
+  const objectFitClass = fit === "contain" ? "object-contain" : "object-cover";
 
   return (
     <div className={`overflow-hidden relative w-full h-full flex items-center justify-center ${className}`}>
@@ -44,6 +44,7 @@ const SafeImage = ({ src, alt, className = "", fit = "contain" }) => {
 
 export default function Catalogo() {
   const { addToCart } = useContext(CartContext);
+  const [searchParams] = useSearchParams();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +52,14 @@ export default function Catalogo() {
   const [searchTerm, setSearchTerm] = useState('');
   const [saleMode, setSaleMode] = useState('minorista');
   const [modalProduct, setModalProduct] = useState(null);
-  
-  // 🌟 Estado para el Toast Centrado sutil
   const [toastMessage, setToastMessage] = useState(null);
 
+  // EFECTO PARA TITULO DE PESTAÑA
+  useEffect(() => {
+    document.title = "Catálogo - Luisinna Indumentaria";
+  }, []);
+
+  // CARGAR PRODUCTOS Y ATENDER PARÁMETROS DE LA URL
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -62,6 +67,25 @@ export default function Catalogo() {
         if (response.ok) {
           const data = await response.json();
           setProducts(data);
+
+          // Chequear si viene un producto en particular por URL desde el Home
+          const prodId = searchParams.get('producto');
+          if (prodId) {
+            const found = data.find((p) => p._id === prodId);
+            if (found) setModalProduct(found);
+          }
+
+          // Chequear si viene una búsqueda por URL
+          const busquedaParam = searchParams.get('busqueda');
+          if (busquedaParam) {
+            setSearchTerm(busquedaParam);
+          }
+
+          // Chequear si viene una categoría por URL
+          const catParam = searchParams.get('categoria');
+          if (catParam) {
+            setCategoryFilter(catParam);
+          }
         }
       } catch (error) {
         console.error("Error al cargar productos del catálogo:", error);
@@ -71,7 +95,7 @@ export default function Catalogo() {
     };
 
     fetchProducts();
-  }, []);
+  }, [searchParams]);
 
   const showToast = (name, qty) => {
     setToastMessage({ name, qty });
@@ -120,15 +144,15 @@ export default function Catalogo() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-6 py-4 sm:py-8 font-sans relative">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-10 font-sans relative">
       
-      {/* 🌟 TOAST NOTIFICACIÓN CENTRADA Y SUTIL */}
+      {/* TOAST DE NOTIFICACIÓN */}
       {toastMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/20 backdrop-blur-[2px] pointer-events-none animate-in fade-in duration-200">
-          <div className="bg-stone-900 text-white px-5 py-3 sm:px-6 sm:py-4 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-3 max-w-xs w-full text-center justify-center pointer-events-auto">
+          <div className="bg-stone-900 text-white px-5 py-3 sm:px-6 sm:py-4 rounded-xs shadow-2xl border border-stone-700 flex items-center gap-3 max-w-xs w-full text-center justify-center pointer-events-auto">
             <span className="text-lg sm:text-xl">✨</span>
             <div>
-              <p className="font-bold text-[11px] sm:text-xs text-stone-100 line-clamp-1">{toastMessage.name}</p>
+              <p className="font-bold text-[11px] sm:text-xs text-rose-100 uppercase truncate">{toastMessage.name}</p>
               <p className="text-[10px] sm:text-[11px] text-stone-300">
                 {toastMessage.qty > 0 ? `¡Agregado al carrito! (${toastMessage.qty} u.)` : 'Stock insuficiente'}
               </p>
@@ -137,62 +161,67 @@ export default function Catalogo() {
         </div>
       )}
 
-      {/* CABECERA Y SELECTOR DE MODO */}
-      <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-1 sm:space-y-2">
-        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-rose-500">
-          Nuestra Colección
+      {/* CABECERA Y BENEFICIO DESTACADO */}
+      <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-1.5">
+        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-rose-800">
+          Colección Exclusiva
         </span>
-        <h1 className="text-xl sm:text-3xl font-extrabold text-stone-900 uppercase tracking-wider">
-          Catálogo de Productos
+        <h1 className="text-xl sm:text-3xl font-light text-stone-900 uppercase tracking-wide">
+          Catálogo de Indumentaria
         </h1>
 
+        {/* CARTEL 15% OFF */}
+        <div className="bg-rose-100/70 border border-rose-200 p-2.5 rounded-xs mt-3 text-stone-800 text-xs font-medium inline-block">
+          💸 <strong>15% OFF</strong> en cada prenda abonando por <strong>transferencia bancaria</strong>
+        </div>
+
         {/* SELECTOR MODO COMPRA */}
-        <div className="w-full sm:w-auto inline-flex p-1 bg-stone-100 rounded-2xl border border-stone-200 mt-2 sm:mt-4 shadow-inner gap-1">
+        <div className="w-full sm:w-auto inline-flex p-1 bg-stone-100 rounded-xs border border-stone-200 mt-4 shadow-inner gap-1">
           <button
             onClick={() => setSaleMode('minorista')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-xs text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
               saleMode === 'minorista'
-                ? 'bg-white text-stone-900 shadow-md scale-[1.02]'
-                : 'text-stone-500 hover:text-stone-800'
+                ? 'bg-stone-900 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <span className="text-sm sm:text-base">🛍️</span>
-            <span>Minorista</span>
+            <span>🛍️ Minorista</span>
           </button>
           <button
             onClick={() => setSaleMode('mayorista')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-xs text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
               saleMode === 'mayorista'
-                ? 'bg-amber-500 text-white shadow-md scale-[1.02]'
-                : 'text-stone-500 hover:text-stone-800'
+                ? 'bg-rose-900 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            <span className="text-sm sm:text-base">📦</span>
-            <span>Mayorista</span>
+            <span>📦 Mayorista</span>
           </button>
         </div>
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-between mb-6 sm:mb-8 bg-white p-3 sm:p-4 rounded-xl border border-stone-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-between mb-6 sm:mb-8 bg-white p-3.5 rounded-xs border border-rose-200/80 shadow-2xs">
         <div className="w-full sm:w-72 relative">
           <input
             type="text"
-            placeholder="Buscar cosmético..."
+            placeholder="Buscar por prenda, tela o diseño..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+            className="w-full pl-8 pr-3 py-2 text-xs bg-stone-50 border border-rose-200 rounded-xs focus:outline-none focus:ring-1 focus:ring-stone-900"
           />
           <span className="absolute left-2.5 top-2.5 text-xs text-stone-400">🔍</span>
         </div>
 
         <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto justify-center">
-          {['Todas', 'Facial', 'Corporal', 'Capilar'].map((cat) => (
+          {['Todas', 'Remeras', 'Vestidos', 'Pantalones', 'Sweaters'].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                categoryFilter === cat ? 'bg-stone-900 text-white shadow-xs' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              className={`px-3 py-1.5 rounded-xs text-[11px] font-medium uppercase tracking-wider transition ${
+                categoryFilter === cat 
+                  ? 'bg-stone-900 text-white' 
+                  : 'bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-stone-900'
               }`}
             >
               {cat}
@@ -203,17 +232,17 @@ export default function Catalogo() {
 
       {/* LISTADO DE PRODUCTOS */}
       {loading ? (
-        <div className="text-center py-20 text-stone-400 text-xs italic space-y-2">
+        <div className="text-center py-20 text-stone-400 text-xs italic space-y-2 uppercase tracking-widest">
           <span className="text-2xl block animate-spin">✨</span>
-          <p>Cargando nuestro catálogo...</p>
+          <p>Cargando colección...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-stone-200 shadow-xs">
-          <span className="text-4xl">🍃</span>
-          <p className="text-xs text-stone-500 mt-2">No encontramos productos que coincidan con tu búsqueda.</p>
+        <div className="text-center py-16 bg-white rounded-xs border border-rose-200 shadow-2xs">
+          <span className="text-4xl">👗</span>
+          <p className="text-xs text-stone-500 mt-2 uppercase tracking-wider">No encontramos prendas que coincidan con tu búsqueda.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {filteredProducts.map((item) => {
             const isWholesale = saleMode === 'mayorista';
             const price = isWholesale
@@ -227,58 +256,58 @@ export default function Catalogo() {
               <div
                 key={item._id}
                 onClick={() => setModalProduct(item)}
-                className="bg-white rounded-xl border border-stone-200 shadow-xs hover:shadow-md transition flex flex-col overflow-hidden group cursor-pointer"
+                className="bg-white rounded-xs border border-rose-100 shadow-2xs hover:border-rose-300 transition duration-300 flex flex-col overflow-hidden group cursor-pointer"
               >
-                {/* 🌟 MARCO PERFECTO 1:1 PARA LA IMAGEN */}
-                <div className="relative aspect-square w-full bg-stone-50/50 p-3 sm:p-4 border-b border-stone-100 overflow-hidden flex items-center justify-center">
-                  <SafeImage src={item.image} alt={item.name} fit="contain" />
+                {/* MARCO DE IMAGEN */}
+                <div className="relative aspect-square w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
+                  <SafeImage src={item.image} alt={item.name} fit="cover" />
                   
                   {item.destacado && (
-                    <span className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 bg-rose-500 text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider z-10">
-                      ★ Destacado
+                    <span className="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider z-10">
+                      Destacado
                     </span>
                   )}
 
                   {isWholesale && (
-                    <span className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 bg-amber-100 text-amber-800 text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-amber-200 z-10">
+                    <span className="absolute top-2 right-2 bg-stone-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-xs z-10">
                       Min: {minQty}u.
                     </span>
                   )}
                 </div>
 
-                <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3">
+                <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                   <div>
-                    <span className="text-[9px] sm:text-[10px] font-semibold uppercase text-stone-400 tracking-wider block">
-                      {item.category || 'General'}
+                    <span className="text-[9px] font-bold uppercase text-rose-800 tracking-wider block">
+                      {item.category || 'Indumentaria'}
                     </span>
-                    <h3 className="font-bold text-[11px] sm:text-xs text-stone-800 line-clamp-1 mt-0.5">
+                    <h3 className="font-medium text-[11px] sm:text-xs text-stone-800 uppercase truncate mt-0.5" title={item.name}>
                       {item.name}
                     </h3>
-                    <p className="text-[10px] sm:text-[11px] text-stone-500 line-clamp-2 mt-0.5 sm:mt-1 leading-snug sm:leading-relaxed">
+                    <p className="text-[10px] text-stone-500 line-clamp-2 mt-1 leading-snug font-light">
                       {item.description || 'Sin descripción disponible.'}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <div>
-                      <p className="text-[11px] sm:text-xs font-extrabold text-stone-900 leading-tight">
+                  <div className="pt-2 border-t border-rose-50 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-stone-900">
                         ${Number(price).toLocaleString('es-AR')}
                       </p>
-                      <span className={`text-[8px] sm:text-[9px] font-semibold block ${inStock ? 'text-emerald-600' : 'text-rose-500'}`}>
-                        {inStock ? `Stock: ${item.stock}u.` : 'Sin Stock'}
+                      <span className={`text-[8px] font-bold uppercase ${inStock ? 'text-emerald-700' : 'text-rose-500'}`}>
+                        {inStock ? `Stock: ${item.stock}` : 'Sin Stock'}
                       </span>
                     </div>
 
                     <button
                       onClick={(e) => handleAddToCart(item, e)}
                       disabled={!inStock}
-                      className={`w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-1 ${
+                      className={`w-full py-2 text-[9px] font-medium uppercase tracking-[0.15em] transition ${
                         inStock
-                          ? 'bg-stone-900 text-white hover:bg-stone-800 shadow-xs active:scale-95'
+                          ? 'bg-stone-900 text-white hover:bg-stone-800 cursor-pointer'
                           : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                       }`}
                     >
-                      {inStock ? (isWholesale ? `+${minQty}` : '🛒 Agregar') : 'Agotado'}
+                      {inStock ? (isWholesale ? `+${minQty} Al Carrito` : 'Agregar al Carrito') : 'Agotado'}
                     </button>
                   </div>
                 </div>
@@ -289,21 +318,20 @@ export default function Catalogo() {
         </div>
       )}
 
-      {/* 🌟 MODAL DETALLE ADAPTADO */}
+      {/* MODAL DETALLE DE PRENDA */}
       {modalProduct && (
         <div 
-          className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           onClick={() => setModalProduct(null)}
         >
           <div 
-            className="bg-white w-full max-w-5xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-stone-200 relative animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92vh] flex flex-col"
+            className="bg-white w-full max-w-4xl rounded-xs shadow-2xl overflow-hidden border border-rose-200 relative animate-in fade-in duration-200 my-auto max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             
-            {/* Botón de cierre flotante */}
             <button
               onClick={() => setModalProduct(null)}
-              className="absolute top-3 right-3 z-30 bg-stone-900/90 hover:bg-stone-900 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-2xl font-bold text-xs sm:text-base transition transform hover:scale-105 active:scale-95"
+              className="absolute top-3 right-3 z-30 bg-stone-900 hover:bg-stone-800 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg font-bold text-xs transition cursor-pointer"
               title="Cerrar"
             >
               ✕
@@ -311,41 +339,41 @@ export default function Catalogo() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-y-auto">
               
-              {/* 🖼️ ÁREA DE LA FOTO EN EL MODAL */}
-              <div className="md:col-span-7 lg:col-span-8 bg-stone-900 p-3 sm:p-6 md:p-8 flex items-center justify-center relative min-h-[260px] sm:min-h-[400px] md:min-h-[550px]">
+              {/* IMAGEN DEL MODAL */}
+              <div className="md:col-span-6 bg-stone-100 p-4 flex items-center justify-center min-h-[260px] sm:min-h-[400px]">
                 <SafeImage
                   src={modalProduct.detailImage || modalProduct.image}
                   alt={modalProduct.name}
-                  fit="contain"
-                  className="w-full h-full max-h-[280px] sm:max-h-[450px] md:max-h-[520px]"
+                  fit="cover"
+                  className="w-full h-full max-h-[420px] object-cover"
                 />
               </div>
 
-              {/* 📝 ÁREA DE INFORMACIÓN */}
-              <div className="md:col-span-5 lg:col-span-4 p-4 sm:p-8 flex flex-col justify-between space-y-4 sm:space-y-6 bg-white border-t md:border-t-0 md:border-l border-stone-100">
-                <div className="space-y-2 sm:space-y-3">
-                  <span className="text-[10px] sm:text-xs font-bold tracking-widest text-rose-500 uppercase">
-                    {modalProduct.category || 'Cosmética Natural'}
+              {/* DETALLES DE LA PRENDA */}
+              <div className="md:col-span-6 p-6 flex flex-col justify-between space-y-6 bg-white border-t md:border-t-0 md:border-l border-rose-100">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold tracking-[0.25em] text-rose-800 uppercase">
+                    {modalProduct.category || 'Indumentaria Femenina'}
                   </span>
-                  <h2 className="text-lg sm:text-2xl font-black text-stone-900 uppercase tracking-tight leading-snug">
+                  <h2 className="text-lg sm:text-2xl font-light text-stone-900 uppercase tracking-wide">
                     {modalProduct.name}
                   </h2>
-                  <div className="w-10 sm:w-12 h-1 bg-rose-500/30 rounded-full my-2 sm:my-3"></div>
-                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-h-36 sm:max-h-64 overflow-y-auto pr-1">
-                    {modalProduct.description || 'Sin descripción detallada disponible para este producto.'}
+                  <div className="w-10 h-0.5 bg-rose-300 rounded-full my-2"></div>
+                  <p className="text-xs text-stone-600 leading-relaxed max-h-48 overflow-y-auto pr-1 font-light">
+                    {modalProduct.description || 'Sin descripción detallada disponible para esta prenda.'}
                   </p>
                 </div>
 
-                <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-6 border-t border-stone-100">
+                <div className="space-y-4 pt-4 border-t border-rose-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-bold block">Precio final</span>
-                      <span className="text-xl sm:text-3xl font-black text-stone-900">
+                      <span className="text-[9px] text-stone-400 uppercase tracking-widest font-semibold block">Precio</span>
+                      <span className="text-xl sm:text-2xl font-semibold text-stone-900">
                         ${Number(saleMode === 'mayorista' ? (modalProduct.priceWholesale || modalProduct.priceRetail) : modalProduct.priceRetail).toLocaleString('es-AR')}
                       </span>
                     </div>
-                    <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full ${modalProduct.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                      {modalProduct.stock > 0 ? `Stock: ${modalProduct.stock} u.` : 'Sin Stock'}
+                    <span className={`text-[10px] font-bold px-3 py-1 rounded-xs uppercase tracking-wider ${modalProduct.stock > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                      {modalProduct.stock > 0 ? `Stock: ${modalProduct.stock}` : 'Agotado'}
                     </span>
                   </div>
 
@@ -355,14 +383,13 @@ export default function Catalogo() {
                       setModalProduct(null);
                     }}
                     disabled={modalProduct.stock <= 0}
-                    className={`w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 ${
+                    className={`w-full py-3 text-xs font-semibold uppercase tracking-[0.2em] transition shadow-xs cursor-pointer ${
                       modalProduct.stock > 0
-                        ? 'bg-stone-900 hover:bg-stone-800 text-white shadow-stone-900/20'
-                        : 'bg-stone-200 text-stone-400 cursor-not-allowed shadow-none'
+                        ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                        : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                     }`}
                   >
-                    <span className="text-sm sm:text-base">🛒</span>
-                    <span>{modalProduct.stock > 0 ? 'Agregar al Carrito' : 'Agotado'}</span>
+                    {modalProduct.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}
                   </button>
                 </div>
               </div>
