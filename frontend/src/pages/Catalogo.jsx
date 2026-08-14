@@ -214,7 +214,7 @@ export default function Catalogo() {
       {loading ? (
         <div className="text-center py-20 text-stone-400 text-xs italic space-y-2 uppercase tracking-widest">
           <span className="text-2xl block animate-spin">✨</span>
-          <p>Cargando colección...</p>
+          <p>Se están cargando los productos, esperame un segundito...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xs border border-rose-200 shadow-2xs">

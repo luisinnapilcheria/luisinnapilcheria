@@ -4,12 +4,6 @@ import { CartContext } from '../context/CartContext';
 
 const WHATSAPP_NUMBER = '5493482202857';
 
-const reviewModules = import.meta.glob('../assets/reseñas/*.{png,jpg,jpeg,webp,PNG,JPG,WEBP}', {
-  eager: true,
-  import: 'default'
-});
-const reviewImages = Object.values(reviewModules);
-
 const getCleanApiUrl = () => {
   let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
@@ -24,6 +18,7 @@ const API_URL = getCleanApiUrl();
 export default function Carrito() {
   const {
     cartItems,
+    addToCart,
     updateQuantity,
     removeFromCart,
     clearCart
@@ -33,8 +28,7 @@ export default function Carrito() {
 
   const [step, setStep] = useState('cart');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
-  const [showReviews, setShowReviews] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -51,29 +45,30 @@ export default function Carrito() {
     document.title = "Carrito - Luisinna Indumentaria";
   }, []);
 
+  // Cargar algunos productos sugeridos para la sección "También te podría interesar"
   useEffect(() => {
-    if (reviewImages.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviewImages.length);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
+    const fetchRelatedProducts = async () => {
+      try {
+        const response = await fetch(`${API_URL}/products`);
+        if (response.ok) {
+          const data = await response.json();
+          // Excluir los productos que ya están en el carrito
+          const cartIds = new Set(cartItems.map((item) => item._id));
+          const filtered = data.filter((p) => !cartIds.has(p._id));
+          // Tomar hasta 3 productos al azar o los primeros
+          setRelatedProducts(filtered.slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Error al obtener productos sugeridos:", error);
+      }
+    };
+
+    fetchRelatedProducts();
+  }, [cartItems]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleNextReview = () => {
-    if (reviewImages.length > 0) {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviewImages.length);
-    }
-  };
-
-  const handlePrevReview = () => {
-    if (reviewImages.length > 0) {
-      setCurrentReviewIndex((prev) => (prev - 1 + reviewImages.length) % reviewImages.length);
-    }
   };
 
   const getItemUnitPrice = (item) => {
@@ -88,7 +83,7 @@ export default function Carrito() {
     return retailPrice;
   };
 
-  // Cálculo directo del subtotal y total final sin descuentos automáticos
+  // Cálculo directo del subtotal y total final
   const computedSubtotal = cartItems.reduce((acc, item) => {
     return acc + (getItemUnitPrice(item) * item.qty);
   }, 0);
@@ -235,13 +230,16 @@ export default function Carrito() {
                   return (
                     <div
                       key={item._id}
-                      className="bg-white p-4 rounded-xs border border-rose-100 shadow-2xs flex gap-4 items-center"
+                      className="bg-white p-3.5 rounded-xs border border-rose-100 shadow-2xs flex gap-4 items-center"
                     >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover bg-stone-50 rounded-xs border border-stone-100 shrink-0"
-                      />
+                      {/* MINIATURA AJUSTADA PARA NO CORTAR LA IMAGEN */}
+                      <div className="w-16 h-16 bg-stone-50 rounded-xs border border-stone-100 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -421,69 +419,52 @@ export default function Carrito() {
               </form>
             )}
 
-            {/* RESEÑAS DE CLIENTAS */}
-            <div className="bg-stone-900 text-white rounded-xs shadow-2xs border border-stone-800 overflow-hidden text-xs">
-              <div 
-                onClick={() => setShowReviews(!showReviews)}
-                className="flex justify-between items-center p-3 cursor-pointer select-none hover:bg-stone-800 transition"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-rose-300 text-xs">⭐ Reseñas</span>
-                  <span className="font-light text-stone-200 text-[11px] uppercase tracking-wider">Opiniones de Clientas</span>
+            {/* PRODUCTOS RECOMENDADOS (COMPACTO) */}
+            {relatedProducts.length > 0 && (
+              <div className="bg-white p-4 rounded-xs border border-rose-200/80 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
+                    <span>✨</span> También te podría interesar
+                  </h4>
+                  <button
+                    onClick={() => navigate('/catalogo')}
+                    className="text-[10px] font-semibold text-rose-800 hover:underline"
+                  >
+                    Ver todo
+                  </button>
                 </div>
-                <button type="button" className="text-stone-400 text-[10px] font-bold uppercase tracking-wider cursor-pointer">
-                  {showReviews ? 'Ocultar ▲' : 'Ver Reseñas ▼'}
-                </button>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {relatedProducts.map((product) => {
+                    const price = product.priceRetail || product.price || 0;
+                    return (
+                      <div
+                        key={product._id}
+                        className="bg-stone-50 p-2 rounded-xs border border-stone-100 flex flex-col justify-between items-center text-center group"
+                      >
+                        <div className="w-full h-20 bg-white rounded-xs overflow-hidden mb-1.5 flex items-center justify-center p-1 border border-stone-100">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-contain group-hover:scale-105 transition"
+                          />
+                        </div>
+                        <div className="w-full">
+                          <p className="text-[10px] font-medium text-stone-800 truncate uppercase">{product.name}</p>
+                          <p className="text-[10px] font-bold text-stone-900 mt-0.5">${Number(price).toLocaleString('es-AR')}</p>
+                        </div>
+                        <button
+                          onClick={() => addToCart(product, 1)}
+                          className="mt-2 w-full bg-stone-900 hover:bg-stone-800 text-white text-[9px] font-bold py-1 px-1 rounded-xs uppercase tracking-wider transition cursor-pointer"
+                        >
+                          + Agregar
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-
-              {showReviews && (
-                <div className="p-3 border-t border-stone-800 bg-stone-950/40 space-y-2">
-                  {reviewImages.length > 0 ? (
-                    <div className="relative group flex items-center justify-center bg-black/40 rounded-xs p-1.5 border border-stone-800">
-                      <img
-                        src={reviewImages[currentReviewIndex]}
-                        alt={`Reseña ${currentReviewIndex + 1}`}
-                        className="max-h-36 sm:max-h-48 object-contain rounded-xs transition-all duration-300"
-                      />
-
-                      {reviewImages.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={handlePrevReview}
-                            className="absolute left-1 bg-stone-900/80 hover:bg-black text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-xs transition cursor-pointer"
-                          >
-                            ‹
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleNextReview}
-                            className="absolute right-1 bg-stone-900/80 hover:bg-black text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-xs transition cursor-pointer"
-                          >
-                            ›
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="p-2 text-center text-[11px] text-stone-400 italic">
-                      💬 "Hermosa calidad de tela y calce perfecto."
-                    </div>
-                  )}
-
-                  <div className="flex justify-center items-center gap-1 pt-0.5">
-                    {reviewImages.map((_, idx) => (
-                      <span
-                        key={idx}
-                        className={`h-1 rounded-full transition-all ${
-                          idx === currentReviewIndex ? 'w-3 bg-rose-400' : 'w-1 bg-stone-700'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
 
           </div>
 
