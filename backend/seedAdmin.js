@@ -1,44 +1,41 @@
-require('dotenv').config();
+// backend/resetPassword.js
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
-const adminEmail = process.env.ADMIN_EMAIL || 'luisinnaindumentaria@gmail.com';
-const adminPassword = process.env.ADMIN_PASSWORD || 'Luisinna123456';
+const User = require(path.join(__dirname, 'models', 'User'));
 
-const runSeed = async () => {
+const resetAdmin = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI;
-    if (!mongoUri) throw new Error('No se encontró MONGO_URI');
+    await mongoose.connect(process.env.MONGO_URI);
+    
+    const email = 'luisinnaindumentaria@gmail.com';
+    const newPassword = 'Luisinna123456';
+    
+    // Hash manual si tu modelo no tiene middleware pre('save')
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    console.log('🍃 Conectando a MongoDB Atlas...');
-    await mongoose.connect(mongoUri);
+    const user = await User.findOneAndUpdate(
+      { email },
+      { 
+        password: hashedPassword,
+        role: 'admin',
+        name: 'Administradora Luisinna'
+      },
+      { upsert: true, new: true }
+    );
 
-    console.log(`🧹 Limpiando registros previos...`);
-    await User.deleteMany({ email: adminEmail });
-
-    // PASAMOS LA CONTRASEÑA EN TEXTO PLANO
-    // El hook .pre('save') de User.js la encriptará automáticamente una sola vez
-    const newAdmin = await User.create({
-      name: 'Dueña Luisinna Indumentaria',
-      email: adminEmail,
-      password: adminPassword,
-      role: 'admin',
-      isAdmin: true
-    });
-
-    console.log('==================================================');
-    console.log('👑 ¡USUARIO ADMIN CREADO Y ENCRIPTADO CORRECTAMENTE!');
-    console.log(`📌 ID: ${newAdmin._id}`);
-    console.log(`📧 Email: ${adminEmail}`);
-    console.log(`🔑 Contraseña: ${adminPassword}`);
-    console.log('==================================================');
-
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-  } finally {
-    await mongoose.disconnect();
+    console.log('✅ Contraseña restablecida con éxito para:', user.email);
+    console.log('🔑 Nueva contraseña:', newPassword);
+    
+    await mongoose.connection.close();
     process.exit(0);
+  } catch (err) {
+    console.error('❌ Error:', err.message);
+    process.exit(1);
   }
 };
 
-runSeed();
+resetAdmin();
