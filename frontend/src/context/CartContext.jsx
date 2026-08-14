@@ -29,9 +29,8 @@ export const CartProvider = ({ children }) => {
     setCartItems((prevItems) => {
       const exists = prevItems.find((x) => x._id === product._id);
       
-      // Normalizar precio para que no falle en ningún lado
+      // Normalizar precio para minorista
       const actualPrice = Number(product.priceRetail || product.price || 0);
-      const actualWholesalePrice = Number(product.priceWholesale || 0);
 
       if (exists) {
         const currentQty = exists.qty || exists.quantity || 0;
@@ -53,7 +52,6 @@ export const CartProvider = ({ children }) => {
         ...product, 
         price: actualPrice,
         priceRetail: actualPrice,
-        priceWholesale: actualWholesalePrice,
         qty: quantityToAdd,
         quantity: quantityToAdd // Sincronizamos ambas props
       };
@@ -89,19 +87,14 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => setCartItems([]);
 
   // CÁLCULOS DE MONTO SEGUROS
-  const cartSubtotal = cartItems.reduce((acc, item) => {
+  const cartTotal = cartItems.reduce((acc, item) => {
     if (!item) return acc;
     const price = Number(item.priceRetail || item.price || 0);
     const quantity = Number(item.qty || item.quantity || 0);
     return acc + (price * quantity);
   }, 0);
 
-  // Descuento automático si superas los $50.000
-  const aplicaDescuento = cartSubtotal >= 50000;
-  const cartDiscount = aplicaDescuento ? cartSubtotal * 0.10 : 0;
-  const cartTotal = cartSubtotal - cartDiscount;
-
-  // Contador total de unidades válidas para el badge del nav
+  // Contador total de prendas para el badge del Navbar
   const totalCount = cartItems.reduce((acc, item) => {
     if (!item) return acc;
     return acc + Number(item.qty || item.quantity || 0);
@@ -115,11 +108,8 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         removeFromCart,
         clearCart,
-        cartSubtotal,
-        cartDiscount,
         cartTotal,
-        totalCount,
-        aplicaDescuento
+        totalCount
       }}
     >
       {children}

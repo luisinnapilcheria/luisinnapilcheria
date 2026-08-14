@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import ReactGA from 'react-ga4'; // <-- Importación de Google Analytics
+import ReactGA from 'react-ga4'; // Google Analytics
 import { AuthContext } from './context/AuthContext';
 import { CartContext } from './context/CartContext';
 
@@ -12,7 +12,7 @@ import AdminPanel from './components/AdminPanel';
 
 export default function App() {
   const { user, login, logout } = useContext(AuthContext);
-  const { totalCount } = useContext(CartContext); // Badge de items
+  const { totalCount } = useContext(CartContext); // Badge de prendas
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,8 +60,8 @@ export default function App() {
           onClick={() => navigate('/')} 
           className="cursor-pointer text-white hover:text-rose-200 transition flex items-center gap-2 text-xs sm:text-sm font-bold"
         >
-          <span>✨</span>
-          <span>Ámbar Cosmetics</span>
+          <span>👗</span>
+          <span>Luisinna Indumentaria</span>
         </div>
 
         {/* NAVEGACIÓN */}
