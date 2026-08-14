@@ -15,16 +15,6 @@ export default function Navbar() {
     <header className="bg-white border-b border-rose-100 sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
         
-        {/* BRANDING */}
-        <Link to="/" className="flex flex-col items-start group">
-          <span className="text-base sm:text-xl font-light tracking-[0.2em] text-stone-900 uppercase transition group-hover:text-rose-900">
-            Luisinna
-          </span>
-          <span className="text-[8px] font-bold tracking-[0.3em] text-rose-800 uppercase -mt-1">
-            Indumentaria
-          </span>
-        </Link>
-
         {/* NAVEGACIÓN */}
         <nav className="flex items-center gap-4 sm:gap-6 text-xs uppercase tracking-wider font-medium">
           <Link 

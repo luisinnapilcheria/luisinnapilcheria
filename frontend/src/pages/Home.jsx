@@ -156,10 +156,6 @@ export default function Home() {
     }
   };
 
-  const handleAdminAccess = () => {
-    navigate('/login');
-  };
-
   const goToCatalogo = (category = '') => {
     setShowDropdown(false);
     if (category) {
@@ -217,7 +213,7 @@ export default function Home() {
               <img 
                 src={logoImg} 
                 alt="Logo Luisinna" 
-                className="h-14 md:h-16 w-auto object-contain mix-blend-multiply -my-1" 
+                className="h-20 md:h-28 w-auto object-contain mix-blend-multiply -my-2" 
               />
             )}
             <div className="text-lg md:text-2xl font-light tracking-[0.25em] text-stone-900 uppercase">
@@ -460,11 +456,7 @@ export default function Home() {
           </div>
           <div className="text-[10px] font-medium text-stone-500 flex items-center justify-center gap-1">
             <span>Desarrollado con</span>
-            <span 
-              onClick={handleAdminAccess}
-              className="cursor-pointer hover:scale-125 inline-block transition-transform duration-200 select-none"
-              title="Panel Admin"
-            >
+            <span className="inline-block select-none">
               💗
             </span>
             <span>por</span>
