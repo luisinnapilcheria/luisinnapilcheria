@@ -5,15 +5,15 @@ export const ProductContext = createContext();
 
 // Limpieza profunda de la URL de la API y anti-duplicación
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://ambarcosmetics-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
 
-  // Si la URL viene repetida por error de entorno (ej: dom.com/apihttps://dom.com/api)
+  // Si la URL viene repetida por error de entorno
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1]; // Toma únicamente la última URL válida
   }
 
-  // Sanitizado básico de comillas, corchetes y barras finales
+  // Sanitizado básico
   url = url.replace(/[\[\]\(\)'"]/g, '').trim().replace(/\/+$/, '');
 
   // Asegura la terminación en /api
@@ -48,7 +48,7 @@ export function ProductProvider({ children }) {
         setProducts(data);
       }
     } catch (error) {
-      console.error('Error al obtener productos:', error);
+      console.error('Error al obtener prendas:', error);
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export function ProductProvider({ children }) {
     fetchProducts();
   }, []);
 
-  // Agregar nuevo producto (Requiere Token de la Dueña)
+  // Agregar nueva prenda (Requiere Token de administración)
   const addProduct = async (newProduct) => {
     if (!user || !user.token) return { success: false, message: 'No estás autenticada' };
 
@@ -71,9 +71,7 @@ export function ProductProvider({ children }) {
         },
         body: JSON.stringify({
           ...newProduct,
-          priceRetail: Number(newProduct.priceRetail),
-          priceWholesale: Number(newProduct.priceWholesale),
-          minWholesaleQty: Number(newProduct.minWholesaleQty || 1),
+          priceRetail: Number(newProduct.priceRetail || newProduct.price),
           stock: Number(newProduct.stock)
         })
       });
@@ -88,7 +86,7 @@ export function ProductProvider({ children }) {
         setProducts((prev) => [data, ...prev]);
         return { success: true };
       } else {
-        return { success: false, message: data.message || 'Error al guardar el producto' };
+        return { success: false, message: data.message || 'Error al guardar la prenda' };
       }
     } catch (error) {
       return { success: false, message: 'Error al conectar con el servidor' };
@@ -118,33 +116,7 @@ export function ProductProvider({ children }) {
     }
   };
 
-  // Actualizar precios directamente en MongoDB
-  const updatePrices = async (id, priceRetail, priceWholesale) => {
-    if (!user || !user.token) return;
-
-    try {
-      const res = await fetch(`${API_URL}/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
-        },
-        body: JSON.stringify({
-          priceRetail: Number(priceRetail),
-          priceWholesale: Number(priceWholesale)
-        })
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setProducts((prev) => prev.map((p) => (p._id === id ? updated : p)));
-      }
-    } catch (error) {
-      console.error('Error al actualizar precios:', error);
-    }
-  };
-
-  // Eliminar producto del catálogo en MongoDB
+  // Eliminar prenda del catálogo en MongoDB
   const deleteProduct = async (id) => {
     if (!user || !user.token) return;
 
@@ -160,11 +132,11 @@ export function ProductProvider({ children }) {
         setProducts((prev) => prev.filter((p) => p._id !== id));
       }
     } catch (error) {
-      console.error('Error al eliminar producto:', error);
+      console.error('Error al eliminar prenda:', error);
     }
   };
 
-  // Descontar stock al realizar una venta
+  // Descontar stock al realizar una compra
   const reduceStockOnSale = async (id, qty = 1) => {
     const target = products.find((p) => p._id === id);
     if (!target) return;
@@ -180,7 +152,6 @@ export function ProductProvider({ children }) {
         fetchProducts,
         addProduct,
         updateStock,
-        updatePrices,
         deleteProduct,
         reduceStockOnSale
       }}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://ambarcosmetics-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1];
@@ -19,8 +19,8 @@ const SafeImage = ({ src, alt, className = "" }) => {
 
   if (error || !src) {
     return (
-      <div className={`bg-stone-100 flex flex-col items-center justify-center text-stone-400 text-[10px] select-none rounded border border-stone-200 ${className}`}>
-        <span>🖼️</span>
+      <div className={`bg-rose-50/50 flex flex-col items-center justify-center text-stone-400 text-[10px] select-none rounded border border-rose-100 ${className}`}>
+        <span>👗</span>
         <span>Sin foto</span>
       </div>
     );
@@ -76,11 +76,9 @@ export default function AdminPanel() {
 
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Facial',
+    category: 'Remeras',
     description: '',
     priceRetail: '',
-    priceWholesale: '',
-    minWholesaleQty: '6',
     stock: '',
     image: '',
     detailImage: '',
@@ -152,7 +150,7 @@ export default function AdminPanel() {
   // Copiar etiqueta de envío
   const copyShippingData = (order) => {
     const c = order.customer || {};
-    const text = `📦 DATOS DE ENVÍO - ÁMBAR COSMETICS\n----------------------------------\n👤 Destinatario: ${c.fullName}\n📱 WhatsApp: ${c.phone}\n📄 DNI/CUIT: ${c.dni} (${c.taxType})\n🏙️ Localidad: ${c.city || 'No especificada'}\n📍 Dirección: ${c.address}\n📝 Notas: ${c.notes || 'Sin observaciones'}\n💰 Total Pedido: $${order.total?.toLocaleString('es-AR')}`;
+    const text = `📦 DATOS DE ENVÍO - LUISINNA INDUMENTARIA\n----------------------------------\n👤 Destinatario: ${c.fullName}\n📱 WhatsApp: ${c.phone}\n📄 DNI/CUIT: ${c.dni} (${c.taxType})\n🏙️ Localidad: ${c.city || 'No especificada'}\n📍 Dirección: ${c.address}\n📝 Notas: ${c.notes || 'Sin observaciones'}\n💰 Total Pedido: $${order.total?.toLocaleString('es-AR')}`;
     
     navigator.clipboard.writeText(text);
     setCopiedId(order._id);
@@ -190,11 +188,9 @@ export default function AdminPanel() {
     setEditingId(product._id);
     setFormData({
       name: product.name || '',
-      category: product.category || 'Facial',
+      category: product.category || 'Remeras',
       description: product.description || '',
       priceRetail: product.priceRetail || product.price || '',
-      priceWholesale: product.priceWholesale || '',
-      minWholesaleQty: product.minWholesaleQty || '6',
       stock: product.stock ?? '',
       image: product.image || '',
       detailImage: product.detailImage || '',
@@ -210,11 +206,9 @@ export default function AdminPanel() {
     setEditingId(null);
     setFormData({
       name: '',
-      category: 'Facial',
+      category: 'Remeras',
       description: '',
       priceRetail: '',
-      priceWholesale: '',
-      minWholesaleQty: '6',
       stock: '',
       image: '',
       detailImage: '',
@@ -289,11 +283,6 @@ export default function AdminPanel() {
     }
   };
 
-  // 🚨 ORDENAR PEDIDOS POR PRIORIDAD / URGENCIA:
-  // 1. Pendiente de pago / Recibido (Máxima urgencia)
-  // 2. Pagado / Cobrado (Pendiente de empaque y despacho)
-  // 3. Despachado (Al final, ya completado)
-  // 4. Cancelado (Al final de todo)
   const sortedOrders = [...orders].sort((a, b) => {
     const priority = {
       'pendiente_pago': 1,
@@ -308,7 +297,6 @@ export default function AdminPanel() {
     if (pA !== pB) {
       return pA - pB;
     }
-    // Si tienen la misma prioridad, el más reciente va primero
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
@@ -318,7 +306,7 @@ export default function AdminPanel() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 font-sans">
       
       {/* 🧭 NAVEGACIÓN DE PESTAÑAS Y HEADER DEL PANEL */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-200 pb-3 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-rose-100 pb-3 gap-4">
         <div className="flex border-b sm:border-b-0 border-stone-200 gap-2">
           <button
             onClick={() => setActiveTab('products')}
@@ -343,7 +331,7 @@ export default function AdminPanel() {
           >
             <span>🛍️ Control de Pedidos</span>
             {pendingCount > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold animate-pulse">
+              <span className="bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-extrabold animate-pulse">
                 {pendingCount}
               </span>
             )}
@@ -351,7 +339,7 @@ export default function AdminPanel() {
         </div>
 
         {activeTab === 'orders' && pendingCount > 0 && (
-          <span className="text-xs bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+          <span className="text-xs bg-rose-100 text-rose-900 border border-rose-300 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
             ⚠️ Tenés {pendingCount} pedido(s) pendiente(s) de atención
           </span>
         )}
@@ -361,14 +349,14 @@ export default function AdminPanel() {
       {activeTab === 'products' && (
         <div className="space-y-8">
           {/* FORMULARIO DE CREACIÓN / EDICIÓN */}
-          <div className={`p-6 rounded-xl shadow-md border transition-colors ${
-            editingId ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-stone-200'
+          <div className={`p-6 rounded-xl shadow-xs border transition-colors ${
+            editingId ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-rose-100'
           }`}>
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-stone-200">
               <div className="flex items-center gap-2">
                 <span className="text-xl">{editingId ? '✏️' : '➕'}</span>
                 <h2 className="text-base font-bold text-stone-800">
-                  {editingId ? 'Editar Producto' : 'Cargar Nuevo Producto'}
+                  {editingId ? 'Editar Prenda' : 'Cargar Nueva Prenda'}
                 </h2>
               </div>
               {editingId && (
@@ -384,12 +372,12 @@ export default function AdminPanel() {
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-semibold mb-1 text-stone-700">Nombre del producto *</label>
+                <label className="block font-semibold mb-1 text-stone-700">Nombre de la prenda *</label>
                 <input
                   type="text"
                   name="name"
                   required
-                  placeholder="Ej: Crema Hidratante Rosas"
+                  placeholder="Ej: Vestido Lino Florencia"
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
@@ -404,9 +392,13 @@ export default function AdminPanel() {
                   onChange={handleChange}
                   className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
                 >
-                  <option value="Facial">Cosméticos Faciales</option>
-                  <option value="Corporal">Cosméticos Corporales</option>
-                  <option value="Capilar">Cosméticos Capilares</option>
+                  <option value="Remeras">Remeras</option>
+                  <option value="Vestidos">Vestidos</option>
+                  <option value="Pantalones">Pantalones</option>
+                  <option value="Sweaters">Sweaters</option>
+                  <option value="Polleras">Polleras</option>
+                  <option value="Camperas">Camperas</option>
+                  <option value="Otros">Otros</option>
                 </select>
               </div>
 
@@ -415,7 +407,7 @@ export default function AdminPanel() {
                 <textarea
                   name="description"
                   rows="3"
-                  placeholder="Describí beneficios, modo de uso, textura..."
+                  placeholder="Describí telas, talles disponibles, corte..."
                   value={formData.description}
                   onChange={handleChange}
                   className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
@@ -423,7 +415,7 @@ export default function AdminPanel() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1 text-stone-700">Precio Minorista ($) *</label>
+                <label className="block font-semibold mb-1 text-stone-700">Precio ($) *</label>
                 <input
                   type="number"
                   name="priceRetail"
@@ -434,33 +426,6 @@ export default function AdminPanel() {
                   onChange={handleChange}
                   className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold mb-1 text-amber-900">Precio Mayorista ($)</label>
-                  <input
-                    type="number"
-                    name="priceWholesale"
-                    min="0"
-                    placeholder="Opcional"
-                    value={formData.priceWholesale}
-                    onChange={handleChange}
-                    className="w-full p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-800"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-amber-900">Mínimo Unidades</label>
-                  <input
-                    type="number"
-                    name="minWholesaleQty"
-                    min="1"
-                    placeholder="6"
-                    value={formData.minWholesaleQty}
-                    onChange={handleChange}
-                    className="w-full p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-800"
-                  />
-                </div>
               </div>
 
               <div>
@@ -481,7 +446,7 @@ export default function AdminPanel() {
               <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b border-stone-200 pb-2">
                   <label className="block font-bold text-stone-800 text-xs">
-                    📸 Imagen Miniatura (Catálogo y Home) *
+                    📸 Imagen Principal (Catálogo y Home) *
                   </label>
                   
                   <div className="flex gap-2 text-[11px]">
@@ -527,7 +492,7 @@ export default function AdminPanel() {
                         <input
                           type="text"
                           name="image"
-                          placeholder="https://ejemplo.com/foto-miniatura.jpg"
+                          placeholder="https://ejemplo.com/foto-prenda.jpg"
                           value={formData.image}
                           onChange={handleChange}
                           className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
@@ -548,9 +513,9 @@ export default function AdminPanel() {
               </div>
 
               {/* FOTO DETALLE */}
-              <div className="md:col-span-2 bg-amber-50/30 p-4 rounded-lg border border-amber-200 space-y-3">
-                <div className="flex justify-between items-center border-b border-amber-200 pb-2">
-                  <label className="block font-bold text-amber-900 text-xs">
+              <div className="md:col-span-2 bg-rose-50/30 p-4 rounded-lg border border-rose-200 space-y-3">
+                <div className="flex justify-between items-center border-b border-rose-200 pb-2">
+                  <label className="block font-bold text-rose-900 text-xs">
                     🔍 Foto Ampliada (Para el Pop-up / Opcional)
                   </label>
                   
@@ -560,7 +525,7 @@ export default function AdminPanel() {
                       onClick={() => setDetailImageMode('file')}
                       className={`px-2 py-1 rounded font-semibold transition ${
                         detailImageMode === 'file'
-                          ? 'bg-amber-600 text-white'
+                          ? 'bg-rose-800 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
@@ -571,7 +536,7 @@ export default function AdminPanel() {
                       onClick={() => setDetailImageMode('url')}
                       className={`px-2 py-1 rounded font-semibold transition ${
                         detailImageMode === 'url'
-                          ? 'bg-amber-600 text-white'
+                          ? 'bg-rose-800 text-white'
                           : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
@@ -588,9 +553,9 @@ export default function AdminPanel() {
                           type="file"
                           accept="image/*"
                           onChange={(e) => handleFileUpload(e, 'detailImage')}
-                          className="w-full text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-200 file:text-amber-900 hover:file:bg-amber-300 cursor-pointer"
+                          className="w-full text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-200 file:text-rose-900 hover:file:bg-rose-300 cursor-pointer"
                         />
-                        <p className="text-[10px] text-amber-700 mt-1">Si la dejás vacía, se usará automáticamente la foto miniatura.</p>
+                        <p className="text-[10px] text-rose-700 mt-1">Si la dejás vacía, se usará automáticamente la foto principal.</p>
                       </div>
                     ) : (
                       <div>
@@ -607,11 +572,11 @@ export default function AdminPanel() {
                   </div>
 
                   <div className="flex flex-col items-center justify-center">
-                    <span className="text-[10px] font-bold text-amber-800 mb-1">Vista Previa HD</span>
+                    <span className="text-[10px] font-bold text-rose-800 mb-1">Vista Previa HD</span>
                     <SafeImage
                       src={formData.detailImage}
                       alt="Detalle"
-                      className="w-16 h-16 shadow-xs border-amber-300"
+                      className="w-16 h-16 shadow-xs border-rose-300"
                     />
                   </div>
                 </div>
@@ -627,7 +592,7 @@ export default function AdminPanel() {
                   className="w-4 h-4 text-stone-900 rounded cursor-pointer"
                 />
                 <label htmlFor="destacado" className="font-semibold text-stone-700 cursor-pointer">
-                  ¿Mostrar en "Productos Destacados" del Home?
+                  ¿Mostrar en "Destacados" del Home?
                 </label>
               </div>
 
@@ -635,22 +600,22 @@ export default function AdminPanel() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-3 text-white font-bold rounded-lg uppercase tracking-wider text-xs transition shadow-sm ${
+                  className={`w-full py-3 text-white font-bold rounded-lg uppercase tracking-wider text-xs transition shadow-xs ${
                     isSubmitting
                       ? 'bg-stone-400 cursor-not-allowed'
                       : editingId
-                      ? 'bg-amber-600 hover:bg-amber-700'
+                      ? 'bg-rose-800 hover:bg-rose-900'
                       : 'bg-stone-900 hover:bg-stone-800'
                   }`}
                 >
-                  {isSubmitting ? 'Guardando...' : editingId ? '💾 Guardar Cambios' : '➕ Crear Producto'}
+                  {isSubmitting ? 'Guardando...' : editingId ? '💾 Guardar Cambios' : '➕ Crear Prenda'}
                 </button>
               </div>
             </form>
           </div>
 
           {/* TABLA DE INVENTARIO DE PRODUCTOS */}
-          <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+          <div className="bg-white p-6 rounded-xl shadow-xs border border-rose-100">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-base font-bold text-stone-800 flex items-center gap-2">
                 <span>📦</span> Inventario Actual ({products.length})
@@ -663,10 +628,9 @@ export default function AdminPanel() {
                 <thead>
                   <tr className="bg-stone-100 text-stone-600 uppercase text-[10px] tracking-wider border-b border-stone-200">
                     <th className="p-3">Fotos</th>
-                    <th className="p-3">Producto</th>
+                    <th className="p-3">Prenda</th>
                     <th className="p-3">Categoría</th>
-                    <th className="p-3">Precio Minorista</th>
-                    <th className="p-3">Precio Mayorista</th>
+                    <th className="p-3">Precio</th>
                     <th className="p-3">Stock</th>
                     <th className="p-3 text-center">Acciones</th>
                   </tr>
@@ -674,8 +638,8 @@ export default function AdminPanel() {
                 <tbody className="divide-y divide-stone-100">
                   {products.length === 0 && !loading ? (
                     <tr>
-                      <td colSpan="7" className="p-6 text-center text-stone-400 italic">
-                        No hay productos registrados todavía.
+                      <td colSpan="6" className="p-6 text-center text-stone-400 italic">
+                        No hay prendas registradas todavía.
                       </td>
                     </tr>
                   ) : (
@@ -692,7 +656,7 @@ export default function AdminPanel() {
                             <SafeImage
                               src={item.detailImage}
                               alt="Detalle"
-                              className="w-10 h-10 border-amber-300"
+                              className="w-10 h-10 border-rose-200"
                               title="Foto Detalle (Pop-up)"
                             />
                           )}
@@ -700,7 +664,7 @@ export default function AdminPanel() {
                         <td className="p-3 font-bold text-stone-800 max-w-[180px]">
                           <div>{item.name}</div>
                           {item.destacado && (
-                            <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[9px] font-semibold rounded">
+                            <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[9px] font-semibold rounded">
                               ★ Destacado
                             </span>
                           )}
@@ -708,18 +672,6 @@ export default function AdminPanel() {
                         <td className="p-3 text-stone-600 font-medium">{item.category}</td>
                         <td className="p-3 font-bold text-stone-900">
                           ${Number(item.priceRetail || item.price || 0).toLocaleString('es-AR')}
-                        </td>
-                        <td className="p-3 font-semibold text-amber-900">
-                          {item.priceWholesale ? (
-                            <div>
-                              ${Number(item.priceWholesale).toLocaleString('es-AR')}
-                              <span className="block text-[9px] text-stone-400 font-normal">
-                                Min: {item.minWholesaleQty || 1} u.
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-stone-300 italic">N/A</span>
-                          )}
                         </td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -732,7 +684,7 @@ export default function AdminPanel() {
                           <div className="flex justify-center items-center gap-1.5">
                             <button
                               onClick={() => handleEditClick(item)}
-                              className="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md font-semibold transition"
+                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-md font-semibold transition"
                               title="Editar"
                             >
                               ✏️
@@ -758,7 +710,7 @@ export default function AdminPanel() {
 
       {/* ================= PESTAÑA 2: GESTIÓN DE PEDIDOS ================= */}
       {activeTab === 'orders' && (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200 space-y-4">
+        <div className="bg-white p-6 rounded-xl shadow-xs border border-stone-200 space-y-4">
           
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-stone-100 pb-3 gap-2">
             <div>
@@ -766,7 +718,7 @@ export default function AdminPanel() {
                 <span>🛍️</span> Gestión de Pedidos ({orders.length})
               </h2>
               <p className="text-xs text-stone-500">
-                Los pedidos están ordenados por urgencia. Los despachados pasan al fondo de la lista.
+                Los pedidos están ordenados por urgencia.
               </p>
             </div>
             <button
@@ -796,7 +748,7 @@ export default function AdminPanel() {
                     key={order._id}
                     className={`p-4 rounded-xl border transition-all space-y-3 ${
                       isPending
-                        ? 'bg-amber-50/60 border-amber-300 ring-2 ring-amber-400/20 shadow-sm'
+                        ? 'bg-rose-50/60 border-rose-300 ring-2 ring-rose-400/20 shadow-xs'
                         : isPaid
                         ? 'bg-blue-50/40 border-blue-200'
                         : isDispatched
@@ -835,7 +787,7 @@ export default function AdminPanel() {
                       {/* BADGES CON COLORES ALUSIVOS */}
                       <div>
                         {isPending && (
-                          <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 shadow-xs animate-pulse">
+                          <span className="bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 shadow-xs animate-pulse">
                             ⏳ 1. Recibido / Pendiente
                           </span>
                         )}
@@ -865,7 +817,7 @@ export default function AdminPanel() {
                         <p className="text-stone-900 font-semibold">🏙️ <strong>Localidad:</strong> {c.city || 'No especificada'}</p>
                         <p className="text-stone-900 font-semibold">📍 <strong>Dirección:</strong> {c.address || 'Sin dirección'}</p>
                         {c.notes && (
-                          <p className="text-stone-500 text-[11px] italic bg-amber-50 p-1.5 rounded border border-amber-200 mt-1">
+                          <p className="text-stone-500 text-[11px] italic bg-rose-50 p-1.5 rounded border border-rose-200 mt-1">
                             📝 <strong>Notas:</strong> {c.notes}
                           </p>
                         )}
@@ -874,7 +826,7 @@ export default function AdminPanel() {
                       {/* DETALLE DE PRODUCTOS Y TOTAL */}
                       <div className="bg-white p-3 rounded-lg border border-stone-200 flex flex-col justify-between space-y-2">
                         <div className="space-y-1 max-h-32 overflow-y-auto">
-                          <p className="font-bold text-[10px] text-stone-400 uppercase tracking-wider">Productos Pedidos:</p>
+                          <p className="font-bold text-[10px] text-stone-400 uppercase tracking-wider">Prendas Pedidas:</p>
                           {order.items?.map((item, idx) => (
                             <div key={idx} className="flex justify-between text-stone-700">
                               <span>• {item.name} <strong>x{item.qty}</strong></span>
@@ -909,8 +861,8 @@ export default function AdminPanel() {
                           disabled={isPending}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
                             isPending
-                              ? 'bg-amber-200 text-amber-900 cursor-default opacity-60'
-                              : 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                              ? 'bg-rose-200 text-rose-900 cursor-default opacity-60'
+                              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
                           }`}
                         >
                           ⏳ Recibido
