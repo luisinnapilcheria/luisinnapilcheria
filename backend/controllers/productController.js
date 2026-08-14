@@ -32,7 +32,7 @@ exports.getTopProducts = async (req, res) => {
   }
 };
 
-// Crear producto (Admin / Dueña) - Soporta Minorista + Mayorista
+// Crear producto (Admin / Dueña) - Soporta Minorista + Mayorista + Foto Detalle
 exports.createProduct = async (req, res) => {
   try {
     const { 
@@ -46,6 +46,7 @@ exports.createProduct = async (req, res) => {
       isWholesale,
       stock, 
       image, 
+      detailImage, // 👈 Capturamos la foto ampliada
       destacado 
     } = req.body;
 
@@ -55,7 +56,7 @@ exports.createProduct = async (req, res) => {
     const productData = {
       name,
       category,
-      description,
+      description: description || '',
       price: finalRetailPrice,
       priceRetail: finalRetailPrice,
       priceWholesale: finalWholesalePrice,
@@ -63,6 +64,7 @@ exports.createProduct = async (req, res) => {
       isWholesale: isWholesale !== undefined ? Boolean(isWholesale) : finalWholesalePrice > 0,
       stock: Number(stock || 0),
       image: image || '',
+      detailImage: detailImage || '', // 👈 Se guarda en MongoDB al crear
       destacado: Boolean(destacado),
       salesCount: 0
     };
@@ -76,7 +78,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Actualizar producto (Admin / Dueña) - Preserva lógica Mayorista
+// Actualizar producto (Admin / Dueña) - Preserva lógica Mayorista y Foto Detalle
 exports.updateProduct = async (req, res) => {
   try {
     const updateData = { ...req.body };
