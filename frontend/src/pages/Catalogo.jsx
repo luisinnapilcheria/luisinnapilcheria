@@ -50,11 +50,10 @@ export default function Catalogo() {
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
-  const [saleMode, setSaleMode] = useState('minorista');
   const [modalProduct, setModalProduct] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // EFECTO PARA TITULO DE PESTAÑA
+  // EFECTO PARA TÍTULO DE PESTAÑA
   useEffect(() => {
     document.title = "Catálogo - Luisinna Indumentaria";
   }, []);
@@ -97,6 +96,18 @@ export default function Catalogo() {
     fetchProducts();
   }, [searchParams]);
 
+  // CATEGORÍAS DINÁMICAS OBTENIDAS DE LA BASE DE DATOS
+  const categories = [
+    'Todas',
+    ...Array.from(
+      new Set(
+        products
+          .map((p) => p.category?.trim())
+          .filter((cat) => Boolean(cat))
+      )
+    )
+  ];
+
   const showToast = (name, qty) => {
     setToastMessage({ name, qty });
     setTimeout(() => {
@@ -106,29 +117,20 @@ export default function Catalogo() {
 
   const handleAddToCart = (product, e) => {
     if (e) e.stopPropagation();
-    const isWholesale = saleMode === 'mayorista';
-    const currentPrice = isWholesale
-      ? (product.priceWholesale || product.priceRetail || product.price)
-      : (product.priceRetail || product.price);
+    const currentPrice = Number(product.priceRetail || product.price || 0);
 
-    const minQty = Number(product.minWholesaleQty) > 0 ? Number(product.minWholesaleQty) : 1;
-    const qtyToAdd = isWholesale ? minQty : 1;
-
-    if (product.stock < qtyToAdd) {
-      showToast(`⚠️ Solo quedan ${product.stock} u.`, 0);
+    if (product.stock < 1) {
+      showToast(`⚠️ Sin stock disponible`, 0);
       return;
     }
 
     const productToCart = {
       ...product,
-      minWholesaleQty: minQty,
-      price: Number(currentPrice || 0),
-      priceRetail: Number(product.priceRetail || product.price || 0),
-      priceWholesale: Number(product.priceWholesale || 0)
+      price: currentPrice
     };
 
-    addToCart(productToCart, qtyToAdd);
-    showToast(product.name, qtyToAdd);
+    addToCart(productToCart, 1);
+    showToast(product.name, 1);
   };
 
   const filteredProducts = products.filter((item) => {
@@ -154,14 +156,14 @@ export default function Catalogo() {
             <div>
               <p className="font-bold text-[11px] sm:text-xs text-rose-100 uppercase truncate">{toastMessage.name}</p>
               <p className="text-[10px] sm:text-[11px] text-stone-300">
-                {toastMessage.qty > 0 ? `¡Agregado al carrito! (${toastMessage.qty} u.)` : 'Stock insuficiente'}
+                {toastMessage.qty > 0 ? `¡Agregado al carrito!` : 'Stock insuficiente'}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* CABECERA Y BENEFICIO DESTACADO */}
+      {/* CABECERA DE SECCIÓN */}
       <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-1.5">
         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-rose-800">
           Colección Exclusiva
@@ -169,35 +171,6 @@ export default function Catalogo() {
         <h1 className="text-xl sm:text-3xl font-light text-stone-900 uppercase tracking-wide">
           Catálogo de Indumentaria
         </h1>
-
-        {/* CARTEL 15% OFF */}
-        <div className="bg-rose-100/70 border border-rose-200 p-2.5 rounded-xs mt-3 text-stone-800 text-xs font-medium inline-block">
-          💸 <strong>15% OFF</strong> en cada prenda abonando por <strong>transferencia bancaria</strong>
-        </div>
-
-        {/* SELECTOR MODO COMPRA */}
-        <div className="w-full sm:w-auto inline-flex p-1 bg-stone-100 rounded-xs border border-stone-200 mt-4 shadow-inner gap-1">
-          <button
-            onClick={() => setSaleMode('minorista')}
-            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-xs text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
-              saleMode === 'minorista'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
-            }`}
-          >
-            <span>🛍️ Minorista</span>
-          </button>
-          <button
-            onClick={() => setSaleMode('mayorista')}
-            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-xs text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 ${
-              saleMode === 'mayorista'
-                ? 'bg-rose-900 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
-            }`}
-          >
-            <span>📦 Mayorista</span>
-          </button>
-        </div>
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
@@ -213,13 +186,14 @@ export default function Catalogo() {
           <span className="absolute left-2.5 top-2.5 text-xs text-stone-400">🔍</span>
         </div>
 
+        {/* BOTONES DE CATEGORÍA DINÁMICOS */}
         <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto justify-center">
-          {['Todas', 'Remeras', 'Vestidos', 'Pantalones', 'Sweaters'].map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1.5 rounded-xs text-[11px] font-medium uppercase tracking-wider transition ${
-                categoryFilter === cat 
+                categoryFilter.toLowerCase() === cat.toLowerCase()
                   ? 'bg-stone-900 text-white' 
                   : 'bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-stone-900'
               }`}
@@ -244,13 +218,8 @@ export default function Catalogo() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {filteredProducts.map((item) => {
-            const isWholesale = saleMode === 'mayorista';
-            const price = isWholesale
-              ? (item.priceWholesale || item.priceRetail || item.price || 0)
-              : (item.priceRetail || item.price || 0);
-
-            const minQty = isWholesale ? (Number(item.minWholesaleQty) || 1) : 1;
-            const inStock = item.stock >= minQty;
+            const price = item.priceRetail || item.price || 0;
+            const inStock = item.stock > 0;
 
             return (
               <div
@@ -265,12 +234,6 @@ export default function Catalogo() {
                   {item.destacado && (
                     <span className="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider z-10">
                       Destacado
-                    </span>
-                  )}
-
-                  {isWholesale && (
-                    <span className="absolute top-2 right-2 bg-stone-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-xs z-10">
-                      Min: {minQty}u.
                     </span>
                   )}
                 </div>
@@ -307,7 +270,7 @@ export default function Catalogo() {
                           : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                       }`}
                     >
-                      {inStock ? (isWholesale ? `+${minQty} Al Carrito` : 'Agregar al Carrito') : 'Agotado'}
+                      {inStock ? 'Agregar al Carrito' : 'Agotado'}
                     </button>
                   </div>
                 </div>
@@ -369,7 +332,7 @@ export default function Catalogo() {
                     <div>
                       <span className="text-[9px] text-stone-400 uppercase tracking-widest font-semibold block">Precio</span>
                       <span className="text-xl sm:text-2xl font-semibold text-stone-900">
-                        ${Number(saleMode === 'mayorista' ? (modalProduct.priceWholesale || modalProduct.priceRetail) : modalProduct.priceRetail).toLocaleString('es-AR')}
+                        ${Number(modalProduct.priceRetail || modalProduct.price || 0).toLocaleString('es-AR')}
                       </span>
                     </div>
                     <span className={`text-[10px] font-bold px-3 py-1 rounded-xs uppercase tracking-wider ${modalProduct.stock > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
