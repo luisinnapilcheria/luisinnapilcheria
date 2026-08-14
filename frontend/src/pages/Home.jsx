@@ -187,12 +187,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-800 font-sans antialiased relative">
 
-      {/* 0. BARRA SUPERIOR DE ANUNCIOS / PROMO CORREGIDA */}
-      <div className="bg-stone-900 text-rose-100 py-2 px-4 text-center text-[10px] md:text-xs font-medium tracking-wider uppercase flex flex-wrap justify-between items-center gap-2">
-        <div className="flex items-center gap-1.5 font-bold tracking-widest text-rose-200">
-          <span>✨</span>
-          <span>LUISINNA INDUMENTARIA</span>
-        </div>
+      {/* 0. BARRA SUPERIOR DE ANUNCIOS (SIN EL NOMBRE DUPLICADO) */}
+      <div className="bg-stone-900 text-rose-100 py-2 px-4 text-center text-[10px] md:text-xs font-medium tracking-wider uppercase flex justify-center items-center gap-6">
         <div className="flex items-center gap-1.5">
           <span>💸</span>
           <span>
@@ -404,7 +400,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* 4. FOOTER CORREGIDO CON EL NUEVO NÚMERO Y BENEFICIO */}
+      {/* 4. FOOTER */}
       <footer className="bg-stone-100 border-t border-stone-200 text-xs">
         <div className="bg-stone-900 text-stone-100 py-6 px-6">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
@@ -471,7 +467,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 5. BOTÓN FLOTANTE WHATSAPP CON EL NUEVO NÚMERO */}
+      {/* 5. BOTÓN FLOTANTE WHATSAPP */}
       <a 
         href="https://wa.me/5493482202857" 
         target="_blank" 
