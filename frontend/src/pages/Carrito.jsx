@@ -5,7 +5,7 @@ import { CartContext } from '../context/CartContext';
 const WHATSAPP_NUMBER = '5493482202857';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1];
@@ -42,7 +42,7 @@ export default function Carrito() {
   });
 
   useEffect(() => {
-    document.title = "Carrito - Luisinna Indumentaria";
+    document.title = "Carrito - Luisinna Pilcheria";
   }, []);
 
   // Cargar algunos productos sugeridos para la sección "También te podría interesar"
@@ -138,7 +138,7 @@ export default function Carrito() {
     } catch (error) {
       console.error("❌ Error de red/conexión al guardar el pedido:", error);
     } finally {
-      let message = `*✨ NUEVO PEDIDO - LUISINNA INDUMENTARIA ✨*\n\n`;
+      let message = `*✨ NUEVO PEDIDO - LUISINNA PILCHERIA ✨*\n\n`;
       message += `*👤 Cliente:* ${formData.fullName}\n`;
       message += `*📱 Teléfono:* ${formData.phone}\n`;
       message += `*📧 Email:* ${formData.email}\n`;
@@ -206,7 +206,7 @@ export default function Carrito() {
           <span className="text-5xl">👗</span>
           <h3 className="text-base font-semibold text-stone-800 uppercase tracking-wide">El carrito está vacío</h3>
           <p className="text-xs text-stone-500 max-w-sm mx-auto font-light">
-            Explorá nuestro catálogo y elegí tus prendas favoritas de Luisinna Indumentaria.
+            Explorá nuestro catálogo y elegí tus prendas favoritas de Luisinna Pilcheria.
           </p>
           <button
             onClick={() => navigate('/catalogo')}
@@ -522,7 +522,7 @@ export default function Carrito() {
                   <span title="Atención Personalizada">🛍️</span>
                 </div>
                 <p className="text-[10px] text-stone-400 font-medium">
-                  Al hacer clic se enviará el pedido directamente al WhatsApp de Luisinna Indumentaria.
+                  Al hacer clic se enviará el pedido directamente al WhatsApp de Luisinna Pilcheria.
                 </p>
               </div>
 

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1];
@@ -61,7 +61,7 @@ export default function Catalogo() {
 
   // EFECTO PARA TÍTULO DE PESTAÑA
   useEffect(() => {
-    document.title = "Catálogo - Luisinna Indumentaria";
+    document.title = "Catálogo - Luisinna Pilcheria";
   }, []);
 
   // CARGAR PRODUCTOS Y ATENDER PARÁMETROS DE LA URL

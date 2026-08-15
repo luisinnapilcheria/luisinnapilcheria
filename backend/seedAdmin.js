@@ -10,7 +10,7 @@ const resetAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     
-    const email = 'luisinnaindumentaria@gmail.com';
+    const email = 'luisinnapilcheria@gmail.com';
     const newPassword = 'Luisinna123456';
     
     // Hash manual si tu modelo no tiene middleware pre('save')

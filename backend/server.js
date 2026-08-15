@@ -28,14 +28,14 @@ app.use('/api/products', require('./routes/productRoutes'));
 // Función para crear o actualizar la cuenta de la dueña en la BD al arrancar
 const initAdmin = async () => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'luisinnaindumentaria@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'luisinnapilcheria@gmail.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Luisinna123456';
 
     const existingAdmin = await User.findOne({ email: adminEmail });
 
     if (!existingAdmin) {
       await User.create({
-        name: 'Dueña Luisinna Indumentaria',
+        name: 'Dueña Luisinna Pilcheria',
         email: adminEmail,
         password: adminPassword,
         role: 'admin',
@@ -64,7 +64,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Ruta raíz de prueba
 app.get('/', (req, res) => {
-    res.send('El servidor de Luisinna Indumentaria está funcionando correctamente 🚀');
+    res.send('El servidor de Luisinna Pilcheria está funcionando correctamente 🚀');
 });
 
 const PORT = process.env.PORT || 5000;

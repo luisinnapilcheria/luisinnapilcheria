@@ -4,7 +4,7 @@ export const AuthContext = createContext();
 
 // Limpieza profunda de la URL de la API y anti-duplicación
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
 
   // Si por error la URL viene duplicada (ej: dom.com/apihttps://dom.com/api)
   if ((url.match(/https?:\/\//g) || []).length > 1) {

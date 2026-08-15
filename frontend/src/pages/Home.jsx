@@ -12,7 +12,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
 
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
@@ -89,7 +89,7 @@ export default function Home() {
 
   // TÍTULO DE LA PESTAÑA DEL NAVEGADOR
   useEffect(() => {
-    document.title = "Luisinna Indumentaria";
+    document.title = "Luisinna Pilcheria";
   }, []);
 
   // CARGAR PRODUCTOS DESDE LA API
@@ -217,7 +217,7 @@ export default function Home() {
               />
             )}
             <div className="text-lg md:text-2xl font-light tracking-[0.25em] text-stone-900 uppercase">
-              LUISINNA <span className="font-semibold text-rose-900">INDUMENTARIA</span>
+              LUISINNA <span className="font-semibold text-rose-900">PILCHERIA</span>
             </div>
           </div>
           
@@ -435,7 +435,7 @@ export default function Home() {
               📞 <a href="https://wa.me/5493482202857" target="_blank" rel="noreferrer" className="hover:text-stone-900 transition">+54 9 3482 20-2857</a>
             </p>
             <p className="flex items-center gap-2">
-              ✉️ <a href="mailto:luisinnaindumentaria@gmail.com" className="hover:text-stone-900 transition">luisinnaindumentaria@gmail.com</a>
+              ✉️ <a href="mailto:luisinnapilcheria@gmail.com" className="hover:text-stone-900 transition">luisinnapilcheria@gmail.com</a>
             </p>
             <p className="flex items-center gap-2">
               🚚 Envíos a todo el país
@@ -445,14 +445,14 @@ export default function Home() {
           <div className="md:text-right space-y-2">
             <h4 className="font-bold uppercase tracking-wider text-stone-900 text-[10px]">Seguinos en Redes</h4>
             <div className="flex md:justify-end items-center">
-              <span className="text-xs font-normal text-stone-700">@luisinna.indumentaria</span>
+              <span className="text-xs font-normal text-stone-700">@luisinna.pilcheria</span>
             </div>
           </div>
         </div>
 
         <div className="border-t border-stone-200 py-4 text-center text-[9px] text-stone-400 tracking-wider space-y-1">
           <div>
-            © {new Date().getFullYear()} LUISINNA INDUMENTARIA. TODOS LOS DERECHOS RESERVADOS.
+            © {new Date().getFullYear()} LUISINNA PILCHERIA. TODOS LOS DERECHOS RESERVADOS.
           </div>
           <div className="text-[10px] font-medium text-stone-500 flex items-center justify-center gap-1">
             <span>Desarrollado con</span>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
     url = parts[parts.length - 1];
@@ -57,7 +57,7 @@ export default function AdminPanel() {
     return localStorage.getItem('token') || localStorage.getItem('userToken') || null;
   });
 
-  const [loginEmail, setLoginEmail] = useState('luisinnaindumentaria@gmail.com');
+  const [loginEmail, setLoginEmail] = useState('luisinnapilcheria@gmail.com');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -192,7 +192,7 @@ export default function AdminPanel() {
   // Copiar etiqueta de envío
   const copyShippingData = (order) => {
     const c = order.customer || {};
-    const text = `📦 DATOS DE ENVÍO - LUISINNA INDUMENTARIA\n----------------------------------\n👤 Destinatario: ${c.fullName}\n📱 WhatsApp: ${c.phone}\n📄 DNI/CUIT: ${c.dni} (${c.taxType})\n🏙️ Localidad: ${c.city || 'No especificada'}\n📍 Dirección: ${c.address}\n📝 Notas: ${c.notes || 'Sin observaciones'}\n💰 Total Pedido: $${order.total?.toLocaleString('es-AR')}`;
+    const text = `📦 DATOS DE ENVÍO - LUISINNA PILCHERIA\n----------------------------------\n👤 Destinatario: ${c.fullName}\n📱 WhatsApp: ${c.phone}\n📄 DNI/CUIT: ${c.dni} (${c.taxType})\n🏙️ Localidad: ${c.city || 'No especificada'}\n📍 Dirección: ${c.address}\n📝 Notas: ${c.notes || 'Sin observaciones'}\n💰 Total Pedido: $${order.total?.toLocaleString('es-AR')}`;
     
     navigator.clipboard.writeText(text);
     setCopiedId(order._id);

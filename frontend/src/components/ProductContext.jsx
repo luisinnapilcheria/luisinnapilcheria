@@ -5,7 +5,7 @@ export const ProductContext = createContext();
 
 // Limpieza profunda de la URL de la API y anti-duplicación
 const getCleanApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://luisinnaindumentaria-api.onrender.com/api';
+  let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
 
   // Si la URL viene repetida por error de entorno
   if ((url.match(/https?:\/\//g) || []).length > 1) {

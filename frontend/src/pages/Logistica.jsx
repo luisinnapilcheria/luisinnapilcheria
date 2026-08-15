@@ -69,7 +69,7 @@ export default function Logistica() {
           Panel de Logística e Indumentaria
         </h2>
         <p className="text-xs text-stone-500 mt-1">
-          Gestión de stock, precios y altas de prendas para Luisinna Indumentaria.
+          Gestión de stock, precios y altas de prendas para Luisinna Pilcheria.
         </p>
       </div>
       

@@ -13,7 +13,7 @@ const fixAdmin = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ Conectado a MongoDB Atlas.');
 
-    const email = 'luisinnaindumentaria@gmail.com';
+    const email = 'luisinnapilcheria@gmail.com';
     const rawPassword = 'Luisinna123456';
 
     // Acceso directo a la colección sin pasar por el esquema de Mongoose
