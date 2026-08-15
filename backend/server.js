@@ -8,9 +8,22 @@ const User = require('./models/User');
 
 const app = express();
 
-// 1. Configuración de CORS completa
+// 1. Configuración de CORS corregida (compatible con credentials: true)
+const allowedOrigins = [
+  'https://luisinnapilcheria.onrender.com', // Reemplaza con la URL exacta de tu Static Site si es diferente
+  'http://localhost:5173',                  // Entorno local (Vite)
+  'http://localhost:3000'                   // Entorno local (React App)
+];
+
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origen (como clientes de API, curl, o solicitudes entre servidores)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permite acceso si la URL cambia o no está mapeada exactamente
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -31,19 +44,23 @@ const initAdmin = async () => {
     const adminEmail = process.env.ADMIN_EMAIL || 'luisinnapilcheria@gmail.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Luisinna123456';
 
+    // Encriptamos la contraseña con bcrypt para evitar fallos en la autenticación
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
+
     const existingAdmin = await User.findOne({ email: adminEmail });
 
     if (!existingAdmin) {
       await User.create({
         name: 'Dueña Luisinna Pilcheria',
         email: adminEmail,
-        password: adminPassword,
+        password: hashedPassword,
         role: 'admin',
         isAdmin: true
       });
       console.log('👑 ¡Cuenta de la Dueña creada con éxito!');
     } else {
-      existingAdmin.password = adminPassword;
+      existingAdmin.password = hashedPassword;
       existingAdmin.role = 'admin';
       existingAdmin.isAdmin = true;
       await existingAdmin.save();
