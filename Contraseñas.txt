@@ -1,11 +1,11 @@
-luisinnaindumentaria@gmail.com
+luisinnapilcheria@gmail.com
 Luisinna123456
 
-luisinnaindumentaria_db_user
+luisinnapilcheria_db_user
 Efz2LrTe40OJFL6D
 
-mongodb+srv://luisinnaindumentaria_db_user:Efz2LrTe40OJFL6D@luisinnaindumentaria.mxtshkq.mongodb.net/?appName=Luisinnaindumentaria
+mongodb+srv://luisinnapilcheria_db_user:<db_password>@luisinnapilcheria.tdxg518.mongodb.net/luisinna_db?appName=Luisinnapilcheria
 
-https://github.com/luisinnaindumentaria/luisinnaindumentaria.git
+https://github.com/luisinnapilcheria/luisinnapilcheria
 
 .\push.bat

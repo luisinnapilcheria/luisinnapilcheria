@@ -445,7 +445,7 @@ export default function Home() {
           <div className="md:text-right space-y-2">
             <h4 className="font-bold uppercase tracking-wider text-stone-900 text-[10px]">Seguinos en Redes</h4>
             <div className="flex md:justify-end items-center">
-              <span className="text-xs font-normal text-stone-700">@luisinna.pilcheria</span>
+              <span className="text-xs font-normal text-stone-700">@luisinnapilcheria</span>
             </div>
           </div>
         </div>
