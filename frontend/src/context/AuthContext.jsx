@@ -62,6 +62,12 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data);
       localStorage.setItem('userInfo', JSON.stringify(data));
+      
+      // Si el backend envía token, lo guardamos explícitamente para el uso de peticiones protegidas
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Error en Login:', error);
@@ -75,10 +81,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, API_URL }}>
       {children}
     </AuthContext.Provider>
   );
