@@ -8,6 +8,7 @@ import { CartContext } from './context/CartContext';
 import Home from './pages/Home';
 import Catalogo from './pages/Catalogo';
 import Carrito from './pages/Carrito';
+import Terminos from './pages/Terminos';
 import AdminPanel from './components/AdminPanel';
 
 export default function App() {
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/carrito" element={<Carrito />} />
+          <Route path="/terminos" element={<Terminos />} />
           
           <Route 
             path="/login" 

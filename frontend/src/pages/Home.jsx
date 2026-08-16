@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 
 // Importaciones de Swiper
@@ -462,7 +462,10 @@ export default function Home() {
 
         <div className="border-t border-stone-200 py-4 text-center text-[9px] text-stone-400 tracking-wider space-y-1">
           <div>
-            © {new Date().getFullYear()} LUISINNA PILCHERIA. TODOS LOS DERECHOS RESERVADOS.
+            © {new Date().getFullYear()} LUISINNA PILCHERIA. TODOS LOS DERECHOS RESERVADOS. |{' '}
+            <Link to="/terminos" className="underline hover:text-stone-700 transition">
+              Términos y Condiciones
+            </Link>
           </div>
           <div className="text-[10px] font-medium text-stone-500 flex items-center justify-center gap-1">
             <span>Desarrollado con</span>
