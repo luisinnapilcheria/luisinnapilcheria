@@ -13,6 +13,12 @@ export default function ProductCard({ product }) {
     availableVariants.length > 0 ? availableVariants[0]._id : ''
   );
 
+  // Obtener la variante seleccionada actualmente
+  const selectedVariant = product.variants?.find((v) => v._id === selectedVariantId);
+
+  // Si la variante tiene una imagen propia, usamos esa; si no, la principal del producto
+  const currentDisplayImage = selectedVariant?.image || product.image;
+
   const handleAddToCart = () => {
     if (isOutOfStock) return;
 
@@ -21,15 +27,15 @@ export default function ProductCard({ product }) {
       return;
     }
 
-    const selectedVariant = product.variants?.find((v) => v._id === selectedVariantId);
-
     const productToCart = {
       ...product,
+      image: currentDisplayImage, // Envía la foto específica de la variante al carrito
       price: currentPrice,
       selectedVariant: selectedVariant ? {
         _id: selectedVariant._id,
         size: selectedVariant.size,
-        color: selectedVariant.color
+        color: selectedVariant.color,
+        image: selectedVariant.image
       } : null
     };
 
@@ -54,10 +60,10 @@ export default function ProductCard({ product }) {
         )}
       </div>
 
-      {/* CONTENEDOR DE FOTO */}
+      {/* CONTENEDOR DE FOTO (Cambia dinámicamente según la variante elegida) */}
       <div className="w-full aspect-square bg-stone-50 mb-4 overflow-hidden relative rounded-xs">
         <img 
-          src={product.image} 
+          src={currentDisplayImage} 
           alt={product.name} 
           className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ease-out ${
             isOutOfStock ? 'grayscale opacity-60' : ''

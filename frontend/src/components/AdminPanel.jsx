@@ -82,7 +82,7 @@ export default function AdminPanel() {
     image: '',
     detailImage: '',
     destacado: false,
-    variants: [{ size: '', color: '', stock: 0 }]
+    variants: [{ size: '', color: '', stock: 0, image: '' }]
   });
 
   const handleLoginSubmit = async (e) => {
@@ -206,10 +206,26 @@ export default function AdminPanel() {
     setFormData((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
+  const handleVariantFileUpload = (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen es demasiado grande (máximo 5MB).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleVariantChange(index, 'image', reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const addVariantRow = () => {
     setFormData((prev) => ({
       ...prev,
-      variants: [...prev.variants, { size: '', color: '', stock: 0 }]
+      variants: [...prev.variants, { size: '', color: '', stock: 0, image: '' }]
     }));
   };
 
@@ -248,8 +264,8 @@ export default function AdminPanel() {
       detailImage: product.detailImage || '',
       destacado: product.destacado || false,
       variants: product.variants && product.variants.length > 0 
-        ? product.variants 
-        : [{ size: '', color: '', stock: product.stock || 0 }]
+        ? product.variants.map(v => ({ ...v, image: v.image || '' }))
+        : [{ size: '', color: '', stock: product.stock || 0, image: '' }]
     });
 
     setImageMode(product.image?.startsWith('http') ? 'url' : 'file');
@@ -267,7 +283,7 @@ export default function AdminPanel() {
       image: '',
       detailImage: '',
       destacado: false,
-      variants: [{ size: '', color: '', stock: 0 }]
+      variants: [{ size: '', color: '', stock: 0, image: '' }]
     });
   };
 
@@ -534,50 +550,74 @@ export default function AdminPanel() {
                 />
               </div>
 
-              {/* SECCIÓN DE VARIANTES (TALLES, COLORES Y STOCK) */}
+              {/* SECCIÓN DE VARIANTES (TALLES, COLORES, STOCK Y FOTO OPCIONAL) */}
               <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
                 <label className="block font-bold text-stone-800 text-xs uppercase tracking-wider">
-                  Variantes (Talle, Color y Stock por Unidad)
+                  Variantes (Talle, Color, Stock y Foto Específica)
                 </label>
                 {formData.variants.map((v, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Talle (ej: S, M, 38)"
-                      value={v.size}
-                      onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
-                      className="w-1/3 p-2 bg-white border border-stone-300 rounded-md"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Color (ej: Negro, Blanco)"
-                      value={v.color}
-                      onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
-                      className="w-1/3 p-2 bg-white border border-stone-300 rounded-md"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Stock"
-                      min="0"
-                      value={v.stock}
-                      onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                      className="w-1/4 p-2 bg-white border border-stone-300 rounded-md"
-                    />
-                    {formData.variants.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeVariantRow(index)}
-                        className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800"
-                      >
-                        ✕
-                      </button>
-                    )}
+                  <div key={index} className="p-3 bg-white border border-stone-200 rounded-lg space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="Talle (ej: S, M, 38)"
+                        value={v.size}
+                        onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
+                        className="w-1/4 p-2 bg-stone-50 border border-stone-300 rounded-md"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Color (ej: Negro, Rosa)"
+                        value={v.color}
+                        onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
+                        className="w-1/4 p-2 bg-stone-50 border border-stone-300 rounded-md"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Stock"
+                        min="0"
+                        value={v.stock}
+                        onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                        className="w-1/5 p-2 bg-stone-50 border border-stone-300 rounded-md"
+                      />
+                      {formData.variants.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVariantRow(index)}
+                          className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800 ml-auto"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1 border-t border-stone-100">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="URL de foto específica para este color (Opcional)"
+                          value={v.image || ''}
+                          onChange={(e) => handleVariantChange(index, 'image', e.target.value)}
+                          className="w-full p-1.5 text-[11px] bg-stone-50 border border-stone-200 rounded-md"
+                        />
+                      </div>
+                      <label className="text-[10px] font-semibold bg-stone-200 hover:bg-stone-300 px-2 py-1.5 rounded cursor-pointer">
+                        📁 Archivo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleVariantFileUpload(index, e)}
+                        />
+                      </label>
+                      <SafeImage src={v.image} alt="Color" className="w-8 h-8 rounded border-stone-300" />
+                    </div>
                   </div>
                 ))}
                 <button
                   type="button"
                   onClick={addVariantRow}
-                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition"
+                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition pt-1 block"
                 >
                   + Agregar otra variante
                 </button>
@@ -784,7 +824,8 @@ export default function AdminPanel() {
                             {item.variants && item.variants.length > 0 ? (
                               <div className="space-y-0.5 text-[10px]">
                                 {item.variants.map((v, idx) => (
-                                  <div key={idx} className="text-stone-600">
+                                  <div key={idx} className="text-stone-600 flex items-center gap-1">
+                                    {v.image && <SafeImage src={v.image} alt={v.color} className="w-4 h-4" />}
                                     <span className="font-semibold">{v.size || 'Único'} - {v.color || 'Estándar'}:</span> {v.stock} u.
                                   </div>
                                 ))}
