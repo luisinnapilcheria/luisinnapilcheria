@@ -30,14 +30,13 @@ const productSchema = new mongoose.Schema({
   destacado: { type: Boolean, default: false }
 }, { timestamps: true });
 
-// 🔄 Middleware de Mongoose: Recalcula stockTotal automáticamente al guardar o actualizar
-productSchema.pre('save', function (next) {
+// 🔄 Middleware de Mongoose: Recalcula stockTotal automáticamente antes de guardar
+productSchema.pre('save', function () {
   if (this.variants && this.variants.length > 0) {
-    this.stockTotal = this.variants.reduce((acc, curr) => acc + (curr.stock || 0), 0);
+    this.stockTotal = this.variants.reduce((acc, curr) => acc + (Number(curr.stock) || 0), 0);
   } else {
     this.stockTotal = 0;
   }
-  next();
 });
 
 module.exports = mongoose.model('Product', productSchema);
