@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CartContext } from '../context/CartContext';
 import ProductDetailModal from './ProductDetailModal';
 
 const getCleanApiUrl = () => {
@@ -100,6 +99,14 @@ export default function Catalogo() {
     setModalProduct(product);
   };
 
+  // Helper para priorizar la primera foto del array images[]
+  const getProductCardImage = (item) => {
+    if (item?.images && item.images.length > 0 && item.images[0]) {
+      return item.images[0];
+    }
+    return item?.image || item?.detailImage || '';
+  };
+
   const categories = [
     'Todas',
     ...Array.from(
@@ -185,6 +192,8 @@ export default function Catalogo() {
               ? item.variants.some((v) => v.stock > 0)
               : item.stock > 0;
 
+            const cardImg = getProductCardImage(item);
+
             return (
               <div
                 key={item._id}
@@ -192,7 +201,7 @@ export default function Catalogo() {
                 className="bg-white rounded-xs border border-rose-100 shadow-2xs hover:border-rose-300 transition duration-300 flex flex-col overflow-hidden group cursor-pointer"
               >
                 <div className="relative h-64 sm:h-72 w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
-                  <SafeImage src={item.image} alt={item.name} fit="contain" />
+                  <SafeImage src={cardImg} alt={item.name} fit="contain" />
                   
                   {item.destacado && (
                     <span className="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider z-10">

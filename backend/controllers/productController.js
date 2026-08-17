@@ -32,7 +32,7 @@ exports.getTopProducts = async (req, res) => {
   }
 };
 
-// Crear producto (Admin / Dueña) - Soporta Variantes (Talle/Color), Minorista, Mayorista y Fotos
+// Crear producto (Admin / Dueña) - Soporta Galería de Imágenes, Variantes, Precios y Stock
 exports.createProduct = async (req, res) => {
   try {
     const { 
@@ -45,7 +45,8 @@ exports.createProduct = async (req, res) => {
       minWholesaleQty,
       isWholesale,
       stock, 
-      variants, // 👈 Matriz de variantes [ { size, color, stock }, ... ]
+      variants, // 👈 Matriz de variantes [ { size, color, stock, image }, ... ]
+      images,   // 📸 Galería de imágenes principales
       image, 
       detailImage,
       destacado 
@@ -64,6 +65,13 @@ exports.createProduct = async (req, res) => {
       });
     }
 
+    // Normalización del array de imágenes
+    let finalImages = Array.isArray(images) ? images.filter(Boolean) : [];
+    if (finalImages.length === 0) {
+      if (image) finalImages.push(image);
+      if (detailImage) finalImages.push(detailImage);
+    }
+
     const productData = {
       name,
       category,
@@ -73,15 +81,16 @@ exports.createProduct = async (req, res) => {
       priceWholesale: finalWholesalePrice,
       minWholesaleQty: Number(minWholesaleQty || 1),
       isWholesale: isWholesale !== undefined ? Boolean(isWholesale) : finalWholesalePrice > 0,
-      variants: finalVariants, // 👈 Se guardan las variantes
-      image: image || '',
-      detailImage: detailImage || '',
+      variants: finalVariants,
+      images: finalImages, // 📸 Seteamos la galería completa
+      image: finalImages[0] || image || '',
+      detailImage: finalImages[1] || detailImage || finalImages[0] || '',
       destacado: Boolean(destacado),
       salesCount: 0
     };
 
     const product = new Product(productData);
-    const createdProduct = await product.save(); // 🔄 El pre('save') calculará el stockTotal
+    const createdProduct = await product.save(); // 🔄 El pre('save') sincronizará imágenes y calculará stockTotal
     res.status(201).json(createdProduct);
   } catch (error) {
     console.error("❌ Error interno al crear producto:", error);
@@ -89,7 +98,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Actualizar producto (Admin / Dueña) - Preserva variantes y recalcula stockTotal
+// Actualizar producto (Admin / Dueña) - Sincroniza galería de imágenes y recalcula stockTotal
 exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -113,6 +122,13 @@ exports.updateProduct = async (req, res) => {
       updateData.minWholesaleQty = Number(updateData.minWholesaleQty || 1);
     }
 
+    // Si envían un array de imágenes actualizado, sincronizamos image y detailImage
+    if (Array.isArray(updateData.images) && updateData.images.length > 0) {
+      updateData.images = updateData.images.filter(Boolean);
+      updateData.image = updateData.images[0];
+      updateData.detailImage = updateData.images[1] || updateData.images[0];
+    }
+
     // Si viene actualización de stock directo (sin variantes en el body), actualiza o genera una variante por defecto
     if (updateData.stock !== undefined && (!updateData.variants || updateData.variants.length === 0)) {
       if (product.variants && product.variants.length > 0) {
@@ -126,7 +142,7 @@ exports.updateProduct = async (req, res) => {
     // Asignar los campos actualizados al documento existente
     Object.assign(product, updateData);
 
-    // Guardar mediante .save() para disparar el hook pre('save') que recalcula stockTotal
+    // Guardar mediante .save() para disparar el hook pre('save')
     const updatedProduct = await product.save();
     res.json(updatedProduct);
   } catch (error) {

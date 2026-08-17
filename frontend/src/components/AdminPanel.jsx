@@ -67,8 +67,6 @@ export default function AdminPanel() {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageMode, setImageMode] = useState('file');
-  const [detailImageMode, setDetailImageMode] = useState('file');
 
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -79,7 +77,7 @@ export default function AdminPanel() {
     category: 'Remeras',
     description: '',
     priceRetail: '',
-    image: '',
+    images: [''],
     detailImage: '',
     variants: [{ size: '', color: '', stock: 0, image: '' }]
   });
@@ -196,6 +194,42 @@ export default function AdminPanel() {
     }));
   };
 
+  // Manejadores de Array de Imágenes del Producto
+  const handleImageChange = (index, value) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData((prev) => ({ ...prev, images: newImages }));
+  };
+
+  const handleImageFileUpload = (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen es demasiado grande (máximo 5MB).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleImageChange(index, reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addImageField = () => {
+    setFormData((prev) => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index) => {
+    if (formData.images.length === 1) return;
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Manejadores de Variantes
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.variants];
     updatedVariants[index] = {
@@ -236,38 +270,31 @@ export default function AdminPanel() {
     }));
   };
 
-  const handleFileUpload = (e, fieldName = 'image') => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("La imagen es demasiado grande. Por favor seleccioná un archivo de menos de 5MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, [fieldName]: reader.result }));
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleEditClick = (product) => {
     setEditingId(product._id);
+    
+    // Normalizar imágenes previas a array
+    let initialImages = [];
+    if (product.images && product.images.length > 0) {
+      initialImages = product.images;
+    } else if (product.image) {
+      initialImages = [product.image];
+    } else {
+      initialImages = [''];
+    }
+
     setFormData({
       name: product.name || '',
       category: product.category || 'Remeras',
       description: product.description || '',
       priceRetail: product.priceRetail || product.price || '',
-      image: product.image || '',
+      images: initialImages,
       detailImage: product.detailImage || '',
       variants: product.variants && product.variants.length > 0 
         ? product.variants.map(v => ({ ...v, image: v.image || '' }))
         : [{ size: '', color: '', stock: product.stock || 0, image: '' }]
     });
 
-    setImageMode(product.image?.startsWith('http') ? 'url' : 'file');
-    setDetailImageMode(product.detailImage?.startsWith('http') ? 'url' : 'file');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -278,7 +305,7 @@ export default function AdminPanel() {
       category: 'Remeras',
       description: '',
       priceRetail: '',
-      image: '',
+      images: [''],
       detailImage: '',
       variants: [{ size: '', color: '', stock: 0, image: '' }]
     });
@@ -292,18 +319,21 @@ export default function AdminPanel() {
     const url = isEditing ? `${API_URL}/products/${editingId}` : `${API_URL}/products`;
     const method = isEditing ? 'PUT' : 'POST';
 
-    // Se filtran variantes válidas (que tengan talle, color, stock o foto)
+    // Filtrar imágenes válidas que no estén vacías
+    const validImages = formData.images.filter((img) => img && img.trim() !== '');
+
+    // Filtrar variantes válidas
     const validVariants = formData.variants.filter(
       (v) => v.size || v.color || v.stock > 0 || (v.image && v.image.trim() !== '')
     );
 
-    // Si la imagen principal está vacía, se toma la primera foto disponible de las variantes
-    const variantWithImage = validVariants.find((v) => v.image && v.image.trim() !== '');
-    const mainImage = formData.image || variantWithImage?.image || '';
+    // Compatibilidad hacia atrás: la primera imagen del array es 'image'
+    const primaryImage = validImages[0] || '';
 
     const payload = {
       ...formData,
-      image: mainImage,
+      image: primaryImage,
+      images: validImages,
       priceRetail: Number(formData.priceRetail),
       variants: validVariants
     };
@@ -557,7 +587,7 @@ export default function AdminPanel() {
                 />
               </div>
 
-              {/* SECCIÓN DE VARIANTES (TALLES, COLORES, STOCK Y FOTO OPCIONAL) */}
+              {/* SECCIÓN DE VARIANTES */}
               <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
                 <label className="block font-bold text-stone-800 text-xs uppercase tracking-wider">
                   Variantes (Talle, Color, Stock y Foto Específica)
@@ -630,120 +660,55 @@ export default function AdminPanel() {
                 </button>
               </div>
 
-              {/* IMAGEN PRINCIPAL */}
+              {/* SECCIÓN MÚLTIPLES FOTOS GENERALES DEL PRODUCTO */}
               <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
-                <div className="flex justify-between items-center border-b border-stone-200 pb-2">
-                  <label className="block font-bold text-stone-800 text-xs">
-                    📸 Imagen Principal (Opcional si usás fotos en las variantes)
-                  </label>
-                  <div className="flex gap-2 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setImageMode('file')}
-                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        imageMode === 'file' ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                      }`}
-                    >
-                      📁 Archivo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setImageMode('url')}
-                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        imageMode === 'url' ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                      }`}
-                    >
-                      🌐 URL
-                    </button>
-                  </div>
-                </div>
+                <label className="block font-bold text-stone-800 text-xs uppercase tracking-wider">
+                  📸 Fotos Generales del Producto (Galería)
+                </label>
+                <p className="text-[11px] text-stone-500">
+                  La primera imagen será la foto principal del catálogo. Podés agregar más fotos para la galería de la prenda.
+                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center">
-                  <div className="sm:col-span-3">
-                    {imageMode === 'file' ? (
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(e, 'image')}
-                          className="w-full text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-stone-200 file:text-stone-800 hover:file:bg-stone-300 cursor-pointer"
-                        />
-                        <p className="text-[10px] text-stone-400 mt-1">Soporta JPG, PNG, WEBP.</p>
-                      </div>
-                    ) : (
+                {formData.images.map((imgUrl, index) => (
+                  <div key={index} className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-stone-200">
+                    <span className="text-[10px] font-bold text-stone-400 w-5">#{index + 1}</span>
+                    <input
+                      type="text"
+                      placeholder="URL de la imagen o seleccioná un archivo..."
+                      value={imgUrl}
+                      onChange={(e) => handleImageChange(index, e.target.value)}
+                      className="flex-1 p-2 bg-stone-50 border border-stone-300 rounded-md text-xs"
+                    />
+                    <label className="text-[10px] font-semibold bg-stone-200 hover:bg-stone-300 px-2.5 py-2 rounded cursor-pointer">
+                      📁 Archivo
                       <input
-                        type="text"
-                        name="image"
-                        placeholder="https://ejemplo.com/foto-prenda.jpg"
-                        value={formData.image}
-                        onChange={handleChange}
-                        className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageFileUpload(index, e)}
                       />
+                    </label>
+                    <SafeImage src={imgUrl} alt={`Foto ${index + 1}`} className="w-10 h-10 rounded border-stone-300" />
+                    {formData.images.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeImageField(index)}
+                        className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800 cursor-pointer"
+                        title="Eliminar foto"
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-[10px] font-bold text-stone-500 mb-1">Vista Previa</span>
-                    <SafeImage src={formData.image} alt="Miniatura" className="w-16 h-16 shadow-xs" />
-                  </div>
-                </div>
-              </div>
+                ))}
 
-              {/* FOTO DETALLE */}
-              <div className="md:col-span-2 bg-rose-50/30 p-4 rounded-lg border border-rose-200 space-y-3">
-                <div className="flex justify-between items-center border-b border-rose-200 pb-2">
-                  <label className="block font-bold text-rose-900 text-xs">
-                    🔍 Foto Ampliada (Para el Pop-up / Opcional)
-                  </label>
-                  <div className="flex gap-2 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setDetailImageMode('file')}
-                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        detailImageMode === 'file' ? 'bg-rose-800 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                      }`}
-                    >
-                      📁 Archivo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDetailImageMode('url')}
-                      className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        detailImageMode === 'url' ? 'bg-rose-800 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                      }`}
-                    >
-                      🌐 URL
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center">
-                  <div className="sm:col-span-3">
-                    {detailImageMode === 'file' ? (
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(e, 'detailImage')}
-                          className="w-full text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-rose-200 file:text-rose-900 hover:file:bg-rose-300 cursor-pointer"
-                        />
-                        <p className="text-[10px] text-rose-700 mt-1">Si la dejás vacía, se usará automáticamente la foto principal.</p>
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        name="detailImage"
-                        placeholder="https://ejemplo.com/foto-hd.jpg"
-                        value={formData.detailImage}
-                        onChange={handleChange}
-                        className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-[10px] font-bold text-rose-800 mb-1">Vista Previa HD</span>
-                    <SafeImage src={formData.detailImage} alt="Detalle" className="w-16 h-16 shadow-xs border-rose-300" />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={addImageField}
+                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition pt-1 block cursor-pointer"
+                >
+                  + Agregar otra foto general
+                </button>
               </div>
 
               <div className="md:col-span-2 pt-2">
@@ -793,13 +758,16 @@ export default function AdminPanel() {
                         ? item.variants.reduce((acc, curr) => acc + (curr.stock || 0), 0)
                         : item.stock || 0;
 
+                      const itemImages = item.images && item.images.length > 0 ? item.images : [item.image].filter(Boolean);
+
                       return (
                         <tr key={item._id} className="hover:bg-stone-50/80 transition">
-                          <td className="p-2.5 flex gap-1 items-center">
-                            <SafeImage src={item.image} alt={item.name} className="w-10 h-10" title="Miniatura" />
-                            {item.detailImage && (
-                              <SafeImage src={item.detailImage} alt="Detalle" className="w-10 h-10 border-rose-200" title="Foto Detalle (Pop-up)" />
-                            )}
+                          <td className="p-2.5">
+                            <div className="flex gap-1 items-center max-w-[120px] overflow-x-auto">
+                              {itemImages.map((img, idx) => (
+                                <SafeImage key={idx} src={img} alt={`${item.name} ${idx + 1}`} className="w-10 h-10 min-w-[2.5rem]" title={`Foto ${idx + 1}`} />
+                              ))}
+                            </div>
                           </td>
                           <td className="p-3 font-bold text-stone-800 max-w-[180px]">
                             <div>{item.name}</div>

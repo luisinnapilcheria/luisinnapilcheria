@@ -58,6 +58,7 @@ export default function Catalogo() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalProduct, setModalProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const [toastMessage, setToastMessage] = useState(null);
 
   // EFECTO PARA TÍTULO DE PESTAÑA
@@ -78,10 +79,7 @@ export default function Catalogo() {
           if (prodId) {
             const found = data.find((p) => p._id === prodId);
             if (found) {
-              setModalProduct(found);
-              if (found.variants && found.variants.length > 0) {
-                setSelectedVariant(found.variants[0]);
-              }
+              handleOpenModal(found);
             }
           }
 
@@ -101,14 +99,38 @@ export default function Catalogo() {
     fetchProducts();
   }, [searchParams]);
 
-  // Al abrir modal, autoseleccionar primera variante si existe
+  // Al abrir modal, resetear índice de galería y autoseleccionar primera variante
   const handleOpenModal = (product) => {
     setModalProduct(product);
+    setActiveGalleryIndex(0);
     if (product.variants && product.variants.length > 0) {
       setSelectedVariant(product.variants[0]);
     } else {
       setSelectedVariant(null);
     }
+  };
+
+  // Helper para resolver la primera imagen disponible de la tarjeta
+  const getProductCardImage = (item) => {
+    if (item?.images && item.images.length > 0 && item.images[0]) {
+      return item.images[0];
+    }
+    return item?.image || item?.detailImage || '';
+  };
+
+  // Helper para resolver la imagen activa en el Modal
+  const getModalActiveImage = () => {
+    if (!modalProduct) return '';
+    // 1. Si la variante tiene imagen asignada, usa esa foto
+    if (selectedVariant && selectedVariant.image?.trim()) {
+      return selectedVariant.image;
+    }
+    // 2. Si el producto tiene galería de imágenes
+    const productImages = modalProduct.images && modalProduct.images.length > 0 
+      ? modalProduct.images 
+      : [modalProduct.detailImage || modalProduct.image].filter(Boolean);
+
+    return productImages[activeGalleryIndex] || productImages[0] || '';
   };
 
   const categories = [
@@ -132,7 +154,6 @@ export default function Catalogo() {
   const handleAddToCart = (product, variant, e) => {
     if (e) e.stopPropagation();
     const currentPrice = Number(product.priceRetail || product.price || 0);
-
     const availableStock = variant ? variant.stock : product.stock;
 
     if (availableStock < 1) {
@@ -140,8 +161,11 @@ export default function Catalogo() {
       return;
     }
 
+    const activeImage = getModalActiveImage() || getProductCardImage(product);
+
     const productToCart = {
       ...product,
+      image: activeImage,
       price: currentPrice
     };
 
@@ -237,6 +261,8 @@ export default function Catalogo() {
             const inStock = item.variants && item.variants.length > 0
               ? item.variants.some((v) => v.stock > 0)
               : item.stock > 0;
+            
+            const cardImg = getProductCardImage(item);
 
             return (
               <div
@@ -245,7 +271,7 @@ export default function Catalogo() {
                 className="bg-white rounded-xs border border-rose-100 shadow-2xs hover:border-rose-300 transition duration-300 flex flex-col overflow-hidden group cursor-pointer"
               >
                 <div className="relative h-64 sm:h-72 w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
-                  <SafeImage src={item.image} alt={item.name} fit="contain" />
+                  <SafeImage src={cardImg} alt={item.name} fit="contain" />
                   
                   {item.destacado && (
                     <span className="absolute top-2 left-2 bg-rose-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider z-10">
@@ -316,13 +342,35 @@ export default function Catalogo() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-y-auto">
               
-              <div className="md:col-span-6 bg-stone-50 p-4 flex items-center justify-center h-80 sm:h-[450px]">
-                <SafeImage
-                  src={modalProduct.detailImage || modalProduct.image}
-                  alt={modalProduct.name}
-                  fit="contain"
-                  className="w-full h-full"
-                />
+              {/* IMAGEN DEL MODAL + MINIATURAS SI HAY MÁS DE 1 IMAGEN */}
+              <div className="md:col-span-6 bg-stone-50 p-4 flex flex-col items-center justify-between min-h-[350px] sm:min-h-[450px]">
+                <div className="w-full h-72 sm:h-[380px] flex items-center justify-center">
+                  <SafeImage
+                    src={getModalActiveImage()}
+                    alt={modalProduct.name}
+                    fit="contain"
+                    className="w-full h-full"
+                  />
+                </div>
+
+                {/* GALERÍA DE MINIATURAS (Si el producto tiene varias fotos en images[]) */}
+                {modalProduct.images && modalProduct.images.length > 1 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto w-full justify-center py-1">
+                    {modalProduct.images.map((imgUrl, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveGalleryIndex(idx)}
+                        className={`w-10 h-10 rounded border overflow-hidden transition cursor-pointer ${
+                          activeGalleryIndex === idx
+                            ? 'border-stone-900 ring-1 ring-stone-900'
+                            : 'border-stone-200 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="md:col-span-6 p-6 flex flex-col justify-between space-y-6 bg-white border-t md:border-t-0 md:border-l border-rose-100">
