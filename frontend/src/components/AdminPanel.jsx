@@ -81,7 +81,6 @@ export default function AdminPanel() {
     priceRetail: '',
     image: '',
     detailImage: '',
-    destacado: false,
     variants: [{ size: '', color: '', stock: 0, image: '' }]
   });
 
@@ -262,7 +261,6 @@ export default function AdminPanel() {
       priceRetail: product.priceRetail || product.price || '',
       image: product.image || '',
       detailImage: product.detailImage || '',
-      destacado: product.destacado || false,
       variants: product.variants && product.variants.length > 0 
         ? product.variants.map(v => ({ ...v, image: v.image || '' }))
         : [{ size: '', color: '', stock: product.stock || 0, image: '' }]
@@ -282,7 +280,6 @@ export default function AdminPanel() {
       priceRetail: '',
       image: '',
       detailImage: '',
-      destacado: false,
       variants: [{ size: '', color: '', stock: 0, image: '' }]
     });
   };
@@ -295,10 +292,20 @@ export default function AdminPanel() {
     const url = isEditing ? `${API_URL}/products/${editingId}` : `${API_URL}/products`;
     const method = isEditing ? 'PUT' : 'POST';
 
+    // Se filtran variantes válidas (que tengan talle, color, stock o foto)
+    const validVariants = formData.variants.filter(
+      (v) => v.size || v.color || v.stock > 0 || (v.image && v.image.trim() !== '')
+    );
+
+    // Si la imagen principal está vacía, se toma la primera foto disponible de las variantes
+    const variantWithImage = validVariants.find((v) => v.image && v.image.trim() !== '');
+    const mainImage = formData.image || variantWithImage?.image || '';
+
     const payload = {
       ...formData,
+      image: mainImage,
       priceRetail: Number(formData.priceRetail),
-      variants: formData.variants.filter(v => v.size || v.color || v.stock > 0)
+      variants: validVariants
     };
 
     try {
@@ -536,7 +543,7 @@ export default function AdminPanel() {
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block font-semibold mb-1 text-stone-700">Precio ($) *</label>
                 <input
                   type="number"
@@ -584,7 +591,7 @@ export default function AdminPanel() {
                         <button
                           type="button"
                           onClick={() => removeVariantRow(index)}
-                          className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800 ml-auto"
+                          className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800 ml-auto cursor-pointer"
                         >
                           ✕
                         </button>
@@ -617,17 +624,17 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={addVariantRow}
-                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition pt-1 block"
+                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition pt-1 block cursor-pointer"
                 >
                   + Agregar otra variante
                 </button>
               </div>
 
-              {/* IMAGEN MINIATURA */}
+              {/* IMAGEN PRINCIPAL */}
               <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b border-stone-200 pb-2">
                   <label className="block font-bold text-stone-800 text-xs">
-                    📸 Imagen Principal (Catálogo y Home) *
+                    📸 Imagen Principal (Opcional si usás fotos en las variantes)
                   </label>
                   <div className="flex gap-2 text-[11px]">
                     <button
@@ -739,20 +746,6 @@ export default function AdminPanel() {
                 </div>
               </div>
 
-              <div className="md:col-span-2 flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="destacado"
-                  name="destacado"
-                  checked={formData.destacado}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-stone-900 rounded cursor-pointer"
-                />
-                <label htmlFor="destacado" className="font-semibold text-stone-700 cursor-pointer">
-                  ¿Mostrar en "Destacados" del Home?
-                </label>
-              </div>
-
               <div className="md:col-span-2 pt-2">
                 <button
                   type="submit"
@@ -810,11 +803,6 @@ export default function AdminPanel() {
                           </td>
                           <td className="p-3 font-bold text-stone-800 max-w-[180px]">
                             <div>{item.name}</div>
-                            {item.destacado && (
-                              <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[9px] font-semibold rounded">
-                                ★ Destacado
-                              </span>
-                            )}
                           </td>
                           <td className="p-3 text-stone-600 font-medium">{item.category}</td>
                           <td className="p-3 font-bold text-stone-900">
