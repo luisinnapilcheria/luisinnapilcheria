@@ -34,7 +34,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Rutas de la API
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Función para inicializar/sincronizar cuenta Admin
 const initAdmin = async () => {
