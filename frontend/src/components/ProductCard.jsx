@@ -4,33 +4,30 @@ import { CartContext } from '../context/CartContext';
 export default function ProductDetailModal({ product, onClose }) {
   const { addToCart } = useContext(CartContext);
 
-  const variants = product.variants || [];
+  const variants = product?.variants || [];
 
-  // Guardamos el objeto completo de la variante activa (o la primera si existe)
+  // 1. Iniciar con la primera variante disponible (si existe)
   const [selectedVariant, setSelectedVariant] = useState(() => {
     return variants.length > 0 ? variants[0] : null;
   });
 
-  // DETERMINACIÓN DINÁMICA DE LA IMAGEN:
-  // 1. Si la variante elegida tiene foto propia (`selectedVariant.image`), la muestra.
-  // 2. Si no, busca la foto principal del producto (`product.image` o `product.detailImage`).
-  // 3. Como último recurso, busca en cualquier variante que tenga foto.
+  // 2. DETERMINACIÓN DINÁMICA DE LA IMAGEN:
+  // Si la variante seleccionada tiene imagen propia (selectedVariant.image), usa esa.
+  // Si no, recurre a la imagen principal del producto (product.image).
   const activeImage = 
     selectedVariant?.image?.trim() || 
-    product.detailImage?.trim() || 
-    product.image?.trim() || 
-    variants.find((v) => v.image && v.image.trim() !== '')?.image || 
+    product?.image?.trim() || 
     '';
 
-  const currentPrice = Number(product.priceRetail || product.price || 0);
-  const currentStock = selectedVariant ? selectedVariant.stock : (product.stock || 0);
+  const currentPrice = Number(product?.priceRetail || product?.price || 0);
+  const currentStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
 
   const handleAddToCart = () => {
     if (currentStock <= 0) return;
 
     const itemToAdd = {
       ...product,
-      image: activeImage,
+      image: activeImage, // Enviamos al carrito la foto de la variante elegida
       price: currentPrice,
       selectedVariant: selectedVariant
         ? {
@@ -61,7 +58,7 @@ export default function ProductDetailModal({ product, onClose }) {
           </button>
         )}
 
-        {/* CONTENEDOR DE LA FOTO (SE ACTUALIZA AL HACER CLIC EN CADA VARIANTE) */}
+        {/* CONTENEDOR DE LA IMAGEN DUAL/DINÁMICA */}
         <div className="w-full md:w-1/2 aspect-square bg-stone-100 flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-stone-200">
           {activeImage ? (
             <img
@@ -77,7 +74,7 @@ export default function ProductDetailModal({ product, onClose }) {
           )}
         </div>
 
-        {/* DETALLES Y BOTONES */}
+        {/* INFORMACIÓN DEL PRODUCTO */}
         <div className="w-full md:w-1/2 p-6 flex flex-col justify-between space-y-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-rose-800 uppercase block">
@@ -87,11 +84,11 @@ export default function ProductDetailModal({ product, onClose }) {
               {product.name}
             </h2>
             <p className="text-xs text-stone-500 font-light mt-2 leading-relaxed">
-              {product.description || 'Sin descripción detallada disponible para esta prenda.'}
+              {product.description || 'Sin descripción disponible.'}
             </p>
           </div>
 
-          {/* SELECTOR DE VARIANTES */}
+          {/* LISTA DE VARIANTES (TALLE Y COLOR) */}
           {variants.length > 0 && (
             <div className="space-y-2">
               <label className="block text-[10px] font-bold text-stone-700 uppercase tracking-wider">
@@ -99,7 +96,6 @@ export default function ProductDetailModal({ product, onClose }) {
               </label>
               <div className="flex flex-wrap gap-2">
                 {variants.map((v, idx) => {
-                  // Comprobamos si esta opción es la actualmente seleccionada
                   const isSelected = selectedVariant && (
                     (v._id && v._id === selectedVariant._id) ||
                     (v.size === selectedVariant.size && v.color === selectedVariant.color)
@@ -126,7 +122,7 @@ export default function ProductDetailModal({ product, onClose }) {
             </div>
           )}
 
-          {/* PRECIO Y BOTÓN AGREGAR */}
+          {/* PRECIO Y BOTÓN DE COMPRA */}
           <div className="pt-4 border-t border-stone-100 space-y-3">
             <div className="flex justify-between items-center">
               <div>
