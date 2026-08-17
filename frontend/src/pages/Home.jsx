@@ -282,13 +282,13 @@ export default function Home() {
 
         {/* MENÚ DE NAVEGACIÓN */}
         <nav className="border-t border-rose-200/50 max-w-6xl mx-auto px-6 py-2 flex justify-center space-x-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-700">
-          <button onClick={() => goToCatalogo()} className="hover:text-rose-900 transition pb-0.5 border-b-2 border-transparent hover:border-stone-900">
+          <button onClick={() => goToCatalogo()} className="hover:text-rose-900 transition pb-0.5 border-b-2 border-transparent hover:border-stone-900 cursor-pointer">
             Ver Todo el Catálogo
           </button>
           <button onClick={() => {
             const el = document.getElementById('ultimos-lanzamientos');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }} className="hover:text-rose-900 transition pb-0.5 border-b-2 border-transparent hover:border-stone-900">
+          }} className="hover:text-rose-900 transition pb-0.5 border-b-2 border-transparent hover:border-stone-900 cursor-pointer">
             Últimas Novedades
           </button>
         </nav>
@@ -454,13 +454,28 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="border-t border-stone-200 py-4 text-center text-[9px] text-stone-400 tracking-wider space-y-1">
-          <div>
-            © {new Date().getFullYear()} LUISINNA PILCHERIA. TODOS LOS DERECHOS RESERVADOS. |{' '}
-            <Link to="/terminos" className="underline hover:text-stone-700 transition">
+        {/* PIE DE PÁGINA INFERIOR CON LOS 3 BOTONES / ENLACES */}
+        <div className="border-t border-stone-200 py-6 text-center text-[9px] text-stone-400 tracking-wider space-y-3 px-4">
+          
+          {/* TRES BOTONES LEGALES DE ABAJO */}
+          <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-[10px] uppercase font-semibold text-stone-600">
+            <Link to="/terminos" className="hover:text-stone-900 transition underline underline-offset-2">
               Términos y Condiciones
             </Link>
+            <span className="text-stone-300">•</span>
+            <Link to="/privacidad" className="hover:text-stone-900 transition underline underline-offset-2">
+              Política de Privacidad
+            </Link>
+            <span className="text-stone-300">•</span>
+            <Link to="/arrepentimiento" className="text-rose-800 hover:text-rose-900 transition underline underline-offset-2 font-bold">
+              Botón de Arrepentimiento
+            </Link>
           </div>
+
+          <div>
+            © {new Date().getFullYear()} LUISINNA PILCHERIA. TODOS LOS DERECHOS RESERVADOS.
+          </div>
+
           <div className="text-[10px] font-medium text-stone-500 flex items-center justify-center gap-1">
             <span>Desarrollado con</span>
             <span className="inline-block select-none">
