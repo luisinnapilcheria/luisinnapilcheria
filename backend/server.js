@@ -1,27 +1,25 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const User = require('./models/User');
 
 const app = express();
 
-// 1. Configuración de CORS corregida (compatible con credentials: true)
+// 1. Configuración de CORS
 const allowedOrigins = [
-  'https://luisinnapilcheria.onrender.com', // Reemplaza con la URL exacta de tu Static Site si es diferente
-  'http://localhost:5173',                  // Entorno local (Vite)
-  'http://localhost:3000'                   // Entorno local (React App)
+  'https://luisinnapilcheria.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como clientes de API, curl, o solicitudes entre servidores)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Permite acceso si la URL cambia o no está mapeada exactamente
+      callback(null, true);
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -29,38 +27,37 @@ app.use(cors({
   credentials: true
 }));
 
-// Middlewares para JSON e imágenes (Ampliamos a 50mb para evitar sorpresas)
+// Middlewares para JSON e imágenes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Rutas
-app.use('/api/orders', require('./routes/orders'));
+// Rutas de la API
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
 
-// Función para crear o actualizar la cuenta de la dueña en la BD al arrancar
+// Función para inicializar/sincronizar cuenta Admin
 const initAdmin = async () => {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'luisinnapilcheria@gmail.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Luisinna123456';
 
-    // Encriptamos la contraseña con bcrypt para evitar fallos en la autenticación
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(adminPassword, salt);
-
-    const existingAdmin = await User.findOne({ email: adminEmail });
+    const cleanEmail = adminEmail.trim().toLowerCase();
+    const existingAdmin = await User.findOne({ email: cleanEmail });
 
     if (!existingAdmin) {
+      // Se le pasa la contraseña en texto plano, Mongoose la encripta en el hook pre('save')
       await User.create({
         name: 'Dueña Luisinna Pilcheria',
-        email: adminEmail,
-        password: hashedPassword,
+        email: cleanEmail,
+        password: adminPassword,
         role: 'admin',
         isAdmin: true
       });
       console.log('👑 ¡Cuenta de la Dueña creada con éxito!');
     } else {
-      existingAdmin.password = hashedPassword;
+      // Al asignar la contraseña y hacer save(), el pre('save') re-encripta correctamente
+      existingAdmin.password = adminPassword;
       existingAdmin.role = 'admin';
       existingAdmin.isAdmin = true;
       await existingAdmin.save();
@@ -81,10 +78,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Ruta raíz de prueba
 app.get('/', (req, res) => {
-    res.send('El servidor de Luisinna Pilcheria está funcionando correctamente 🚀');
+  res.send('API de Luisinna Pilcheria funcionando 🚀');
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
