@@ -4,43 +4,40 @@ import { CartContext } from '../context/CartContext';
 export default function ProductDetailModal({ product, onClose }) {
   const { addToCart } = useContext(CartContext);
 
-  const availableVariants = (product.variants || []).filter((v) => v.stock > 0);
+  const variants = product.variants || [];
 
-  // Inicializar seleccionando la primera variante activa
-  const [selectedVariantId, setSelectedVariantId] = useState(() => {
-    if (availableVariants.length > 0) return availableVariants[0]._id || '0';
-    if (product.variants && product.variants.length > 0) return product.variants[0]._id || '0';
-    return '';
+  // Guardamos el objeto completo de la variante activa (o la primera si existe)
+  const [selectedVariant, setSelectedVariant] = useState(() => {
+    return variants.length > 0 ? variants[0] : null;
   });
 
-  // Buscar la variante elegida por _id
-  const selectedVariant = product.variants?.find(
-    (v, idx) => (v._id ? v._id === selectedVariantId : String(idx) === String(selectedVariantId))
-  ) || product.variants?.[0];
-
-  // Determinar la imagen a mostrar con prioridad en la variante elegida
-  const currentDisplayImage =
-    selectedVariant?.image?.trim() ||
-    product.detailImage?.trim() ||
-    product.image?.trim() ||
+  // DETERMINACIÓN DINÁMICA DE LA IMAGEN:
+  // 1. Si la variante elegida tiene foto propia (`selectedVariant.image`), la muestra.
+  // 2. Si no, busca la foto principal del producto (`product.image` o `product.detailImage`).
+  // 3. Como último recurso, busca en cualquier variante que tenga foto.
+  const activeImage = 
+    selectedVariant?.image?.trim() || 
+    product.detailImage?.trim() || 
+    product.image?.trim() || 
+    variants.find((v) => v.image && v.image.trim() !== '')?.image || 
     '';
 
-  const totalStock = selectedVariant ? selectedVariant.stock : product.stock || 0;
   const currentPrice = Number(product.priceRetail || product.price || 0);
+  const currentStock = selectedVariant ? selectedVariant.stock : (product.stock || 0);
 
   const handleAddToCart = () => {
-    if (totalStock <= 0) return;
+    if (currentStock <= 0) return;
 
     const itemToAdd = {
       ...product,
-      image: currentDisplayImage,
+      image: activeImage,
       price: currentPrice,
       selectedVariant: selectedVariant
         ? {
             _id: selectedVariant._id,
             size: selectedVariant.size,
             color: selectedVariant.color,
-            image: currentDisplayImage
+            image: activeImage
           }
         : null
     };
@@ -55,30 +52,32 @@ export default function ProductDetailModal({ product, onClose }) {
       <div className="bg-white max-w-3xl w-full rounded-md shadow-2xl overflow-hidden relative flex flex-col md:flex-row">
         
         {/* BOTÓN CERRAR */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center font-bold text-xs cursor-pointer transition"
-        >
-          ✕
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center font-bold text-xs cursor-pointer transition"
+          >
+            ✕
+          </button>
+        )}
 
-        {/* CONTENEDOR DE LA IMAGEN (Se actualiza con currentDisplayImage) */}
+        {/* CONTENEDOR DE LA FOTO (SE ACTUALIZA AL HACER CLIC EN CADA VARIANTE) */}
         <div className="w-full md:w-1/2 aspect-square bg-stone-100 flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-stone-200">
-          {currentDisplayImage ? (
+          {activeImage ? (
             <img
-              src={currentDisplayImage}
-              alt={product.name}
+              src={activeImage}
+              alt={`${product.name} - ${selectedVariant?.color || ''}`}
               className="w-full h-full object-cover object-center transition-all duration-300"
             />
           ) : (
             <div className="text-stone-400 text-xs flex flex-col items-center">
               <span className="text-3xl">👗</span>
-              <span>Sin imagen</span>
+              <span>Sin foto disponible</span>
             </div>
           )}
         </div>
 
-        {/* DETALLES Y BOTONES DE VARIANTES */}
+        {/* DETALLES Y BOTONES */}
         <div className="w-full md:w-1/2 p-6 flex flex-col justify-between space-y-4">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-rose-800 uppercase block">
@@ -92,33 +91,34 @@ export default function ProductDetailModal({ product, onClose }) {
             </p>
           </div>
 
-          {/* BOTONES DE TALLE Y COLOR */}
-          {product.variants && product.variants.length > 0 && (
+          {/* SELECTOR DE VARIANTES */}
+          {variants.length > 0 && (
             <div className="space-y-2">
               <label className="block text-[10px] font-bold text-stone-700 uppercase tracking-wider">
                 Elegí Talle y Color:
               </label>
               <div className="flex flex-wrap gap-2">
-                {product.variants.map((v, idx) => {
-                  const varId = v._id || String(idx);
-                  const isSelected = selectedVariantId === varId;
-                  const isOutOfStock = v.stock <= 0;
+                {variants.map((v, idx) => {
+                  // Comprobamos si esta opción es la actualmente seleccionada
+                  const isSelected = selectedVariant && (
+                    (v._id && v._id === selectedVariant._id) ||
+                    (v.size === selectedVariant.size && v.color === selectedVariant.color)
+                  );
 
                   return (
                     <button
-                      key={varId}
+                      key={v._id || idx}
                       type="button"
-                      disabled={isOutOfStock}
-                      onClick={() => setSelectedVariantId(varId)}
-                      className={`px-3 py-2 text-xs font-semibold rounded border transition cursor-pointer ${
+                      onClick={() => setSelectedVariant(v)}
+                      className={`px-3 py-2 text-xs font-semibold rounded border transition cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
-                          : isOutOfStock
-                          ? 'bg-stone-100 text-stone-300 border-stone-200 cursor-not-allowed line-through'
+                          ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
                           : 'bg-white text-stone-700 border-stone-300 hover:border-stone-800'
                       }`}
                     >
-                      {v.size ? `${v.size} - ` : ''}{v.color || 'Estándar'} (Stock: {v.stock})
+                      <span>
+                        {v.size ? `${v.size} - ` : ''}{v.color || 'Estándar'} (Stock: {v.stock})
+                      </span>
                     </button>
                   );
                 })}
@@ -126,7 +126,7 @@ export default function ProductDetailModal({ product, onClose }) {
             </div>
           )}
 
-          {/* PRECIO Y ACCIÓN */}
+          {/* PRECIO Y BOTÓN AGREGAR */}
           <div className="pt-4 border-t border-stone-100 space-y-3">
             <div className="flex justify-between items-center">
               <div>
@@ -136,22 +136,22 @@ export default function ProductDetailModal({ product, onClose }) {
                 </span>
               </div>
               <span className={`text-[10px] font-bold px-2.5 py-1 rounded border ${
-                totalStock > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+                currentStock > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
               }`}>
-                {totalStock > 0 ? `STOCK: ${totalStock}` : 'AGOTADO'}
+                {currentStock > 0 ? `STOCK: ${currentStock}` : 'AGOTADO'}
               </span>
             </div>
 
             <button
               onClick={handleAddToCart}
-              disabled={totalStock <= 0}
+              disabled={currentStock <= 0}
               className={`w-full py-3 text-xs font-bold uppercase tracking-widest rounded transition cursor-pointer ${
-                totalStock <= 0
+                currentStock <= 0
                   ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                  : 'bg-stone-900 text-white hover:bg-stone-800 shadow-sm'
+                  : 'bg-stone-900 text-white hover:bg-stone-800 shadow-xs'
               }`}
             >
-              {totalStock <= 0 ? 'Sin Stock' : 'Agregar al Carrito'}
+              {currentStock <= 0 ? 'Sin Stock' : 'Agregar al Carrito'}
             </button>
           </div>
 
