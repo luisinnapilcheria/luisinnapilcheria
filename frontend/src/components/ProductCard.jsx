@@ -1,153 +1,162 @@
 import React, { useState, useContext } from 'react';
 import { CartContext } from '../context/CartContext';
 
-export default function ProductCard({ product }) {
+export default function ProductDetailModal({ product, onClose }) {
   const { addToCart } = useContext(CartContext);
-
-  const totalStock = product.stockTotal !== undefined ? product.stockTotal : (product.stock || 0);
-  const isOutOfStock = totalStock <= 0;
-  const currentPrice = Number(product.priceRetail || product.price || 0);
 
   const availableVariants = (product.variants || []).filter((v) => v.stock > 0);
 
-  // Inicializar seleccionando la primera variante disponible o la primera de la lista
+  // Inicializar seleccionando la primera variante activa
   const [selectedVariantId, setSelectedVariantId] = useState(() => {
-    if (availableVariants.length > 0) return availableVariants[0]._id;
-    if (product.variants && product.variants.length > 0) return product.variants[0]._id;
+    if (availableVariants.length > 0) return availableVariants[0]._id || '0';
+    if (product.variants && product.variants.length > 0) return product.variants[0]._id || '0';
     return '';
   });
 
-  // Obtener la variante seleccionada actualmente
-  const selectedVariant = product.variants?.find((v) => v._id === selectedVariantId);
+  // Buscar la variante elegida por _id
+  const selectedVariant = product.variants?.find(
+    (v, idx) => (v._id ? v._id === selectedVariantId : String(idx) === String(selectedVariantId))
+  ) || product.variants?.[0];
 
-  // Buscar una foto de resguardo en las variantes si product.image no existe
-  const variantWithImage = product.variants?.find((v) => v.image && v.image.trim() !== '');
-
-  // Lógica de resguardo para la imagen (Evita renderizar campos vacíos)
-  const currentDisplayImage = 
-    selectedVariant?.image || 
-    product.image || 
-    variantWithImage?.image || 
+  // Determinar la imagen a mostrar con prioridad en la variante elegida
+  const currentDisplayImage =
+    selectedVariant?.image?.trim() ||
+    product.detailImage?.trim() ||
+    product.image?.trim() ||
     '';
 
+  const totalStock = selectedVariant ? selectedVariant.stock : product.stock || 0;
+  const currentPrice = Number(product.priceRetail || product.price || 0);
+
   const handleAddToCart = () => {
-    if (isOutOfStock) return;
+    if (totalStock <= 0) return;
 
-    if (product.variants && product.variants.length > 0 && !selectedVariantId) {
-      alert('⚠️ Por favor elegí un talle y color antes de agregar al carrito.');
-      return;
-    }
-
-    const productToCart = {
+    const itemToAdd = {
       ...product,
       image: currentDisplayImage,
       price: currentPrice,
-      selectedVariant: selectedVariant ? {
-        _id: selectedVariant._id,
-        size: selectedVariant.size,
-        color: selectedVariant.color,
-        image: selectedVariant.image || currentDisplayImage
-      } : null
+      selectedVariant: selectedVariant
+        ? {
+            _id: selectedVariant._id,
+            size: selectedVariant.size,
+            color: selectedVariant.color,
+            image: currentDisplayImage
+          }
+        : null
     };
 
-    addToCart(productToCart, 1);
-    
-    alert(`🛒 ¡Agregado al carrito!${selectedVariant ? ` (${selectedVariant.size} - ${selectedVariant.color})` : ''}`);
+    addToCart(itemToAdd, 1);
+    alert(`🛒 ¡Agregado al carrito! (${selectedVariant?.size || ''} - ${selectedVariant?.color || ''})`);
+    if (onClose) onClose();
   };
 
   return (
-    <div className="bg-white border border-stone-200 p-4 flex flex-col justify-between relative group hover:shadow-md transition duration-300 rounded-xs">
-      
-      {/* BADGES SUPERIORES */}
-      <div className="absolute top-6 left-6 z-10 flex flex-col gap-1 items-start">
-        {isOutOfStock ? (
-          <span className="bg-stone-900 text-white text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-xs">
-            AGOTADO
-          </span>
-        ) : (
-          <span className="bg-stone-100 text-stone-600 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 border border-stone-200 rounded-xs">
-            Stock: {totalStock} u.
-          </span>
-        )}
-      </div>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white max-w-3xl w-full rounded-md shadow-2xl overflow-hidden relative flex flex-col md:flex-row">
+        
+        {/* BOTÓN CERRAR */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/80 hover:bg-black text-white rounded-full flex items-center justify-center font-bold text-xs cursor-pointer transition"
+        >
+          ✕
+        </button>
 
-      {/* CONTENEDOR DE FOTO */}
-      <div className="w-full aspect-square bg-stone-50 mb-4 overflow-hidden relative rounded-xs">
-        {currentDisplayImage ? (
-          <img 
-            src={currentDisplayImage} 
-            alt={product.name} 
-            className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ease-out ${
-              isOutOfStock ? 'grayscale opacity-60' : ''
-            }`}
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-stone-400">
-            <span className="text-2xl">👗</span>
-            <span className="text-[10px] uppercase font-semibold mt-1">Sin foto</span>
-          </div>
-        )}
-      </div>
-
-      {/* DETALLES */}
-      <div className="space-y-2 flex-grow flex flex-col justify-between">
-        <div>
-          <span className="text-[9px] font-bold tracking-[0.2em] text-rose-800 uppercase block">
-            {product.category || 'Indumentaria'}
-          </span>
-          <h3 className="text-xs font-semibold text-stone-800 uppercase tracking-wider mt-0.5 truncate" title={product.name}>
-            {product.name}
-          </h3>
-          <p className="text-[11px] text-stone-500 font-light line-clamp-2 mt-1 leading-relaxed">
-            {product.description || 'Sin descripción disponible.'}
-          </p>
+        {/* CONTENEDOR DE LA IMAGEN (Se actualiza con currentDisplayImage) */}
+        <div className="w-full md:w-1/2 aspect-square bg-stone-100 flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-stone-200">
+          {currentDisplayImage ? (
+            <img
+              src={currentDisplayImage}
+              alt={product.name}
+              className="w-full h-full object-cover object-center transition-all duration-300"
+            />
+          ) : (
+            <div className="text-stone-400 text-xs flex flex-col items-center">
+              <span className="text-3xl">👗</span>
+              <span>Sin imagen</span>
+            </div>
+          )}
         </div>
 
-        {/* SELECTOR DE VARIANTE (TALLES Y COLORES) */}
-        {!isOutOfStock && product.variants && product.variants.length > 0 && (
-          <div className="pt-2">
-            <label className="block text-[9px] font-bold text-stone-500 uppercase mb-1">
-              Talle y Color:
-            </label>
-            <select
-              value={selectedVariantId}
-              onChange={(e) => setSelectedVariantId(e.target.value)}
-              className="w-full text-xs border border-stone-300 rounded px-2 py-1 bg-stone-50 focus:outline-none focus:ring-1 focus:ring-stone-800"
+        {/* DETALLES Y BOTONES DE VARIANTES */}
+        <div className="w-full md:w-1/2 p-6 flex flex-col justify-between space-y-4">
+          <div>
+            <span className="text-[10px] font-bold tracking-widest text-rose-800 uppercase block">
+              {product.category || 'Indumentaria'}
+            </span>
+            <h2 className="text-xl font-bold text-stone-800 uppercase tracking-wide mt-1">
+              {product.name}
+            </h2>
+            <p className="text-xs text-stone-500 font-light mt-2 leading-relaxed">
+              {product.description || 'Sin descripción detallada disponible para esta prenda.'}
+            </p>
+          </div>
+
+          {/* BOTONES DE TALLE Y COLOR */}
+          {product.variants && product.variants.length > 0 && (
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-stone-700 uppercase tracking-wider">
+                Elegí Talle y Color:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((v, idx) => {
+                  const varId = v._id || String(idx);
+                  const isSelected = selectedVariantId === varId;
+                  const isOutOfStock = v.stock <= 0;
+
+                  return (
+                    <button
+                      key={varId}
+                      type="button"
+                      disabled={isOutOfStock}
+                      onClick={() => setSelectedVariantId(varId)}
+                      className={`px-3 py-2 text-xs font-semibold rounded border transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                          : isOutOfStock
+                          ? 'bg-stone-100 text-stone-300 border-stone-200 cursor-not-allowed line-through'
+                          : 'bg-white text-stone-700 border-stone-300 hover:border-stone-800'
+                      }`}
+                    >
+                      {v.size ? `${v.size} - ` : ''}{v.color || 'Estándar'} (Stock: {v.stock})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* PRECIO Y ACCIÓN */}
+          <div className="pt-4 border-t border-stone-100 space-y-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-stone-400 block uppercase">Precio</span>
+                <span className="text-xl font-extrabold text-stone-900">
+                  ${currentPrice.toLocaleString('es-AR')}
+                </span>
+              </div>
+              <span className={`text-[10px] font-bold px-2.5 py-1 rounded border ${
+                totalStock > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+              }`}>
+                {totalStock > 0 ? `STOCK: ${totalStock}` : 'AGOTADO'}
+              </span>
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              disabled={totalStock <= 0}
+              className={`w-full py-3 text-xs font-bold uppercase tracking-widest rounded transition cursor-pointer ${
+                totalStock <= 0
+                  ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  : 'bg-stone-900 text-white hover:bg-stone-800 shadow-sm'
+              }`}
             >
-              {product.variants.map((v) => (
-                <option key={v._id} value={v._id} disabled={v.stock <= 0}>
-                  {v.size} - {v.color} {v.stock <= 0 ? '(Agotado)' : `(${v.stock} u.)`}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* VALOR Y BOTÓN */}
-        <div className="pt-3 border-t border-stone-100 space-y-2">
-          <div className="flex justify-between items-baseline">
-            <span className="text-[10px] font-medium uppercase text-stone-400">
-              Precio:
-            </span>
-            <span className="text-sm font-bold text-stone-900">
-              ${currentPrice.toLocaleString('es-AR')}
-            </span>
+              {totalStock <= 0 ? 'Sin Stock' : 'Agregar al Carrito'}
+            </button>
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            className={`w-full py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition rounded-xs cursor-pointer ${
-              isOutOfStock 
-                ? 'bg-stone-200 text-stone-400 cursor-not-allowed' 
-                : 'bg-stone-900 text-white hover:bg-stone-800'
-            }`}
-          >
-            {isOutOfStock ? 'Sin Stock' : 'Agregar al Carrito'}
-          </button>
         </div>
       </div>
-
     </div>
   );
 }
