@@ -3,20 +3,16 @@ import { AuthContext } from '../context/AuthContext';
 
 export const ProductContext = createContext();
 
-// Limpieza profunda de la URL de la API y anti-duplicación
 const getCleanApiUrl = () => {
   let url = import.meta.env.VITE_API_URL || 'https://luisinnapilcheria-api.onrender.com/api';
 
-  // Si la URL viene repetida por error de entorno
   if ((url.match(/https?:\/\//g) || []).length > 1) {
     const parts = url.split(/(?=https?:\/\/)/);
-    url = parts[parts.length - 1]; // Toma únicamente la última URL válida
+    url = parts[parts.length - 1];
   }
 
-  // Sanitizado básico
   url = url.replace(/[\[\]\(\)'"]/g, '').trim().replace(/\/+$/, '');
 
-  // Asegura la terminación en /api
   if (!url.endsWith('/api')) {
     url += '/api';
   }
@@ -58,7 +54,7 @@ export function ProductProvider({ children }) {
     fetchProducts();
   }, []);
 
-  // Agregar nueva prenda (Requiere Token de administración)
+  // Agregar nueva prenda (Soporta Variantes de Talles y Colores)
   const addProduct = async (newProduct) => {
     if (!user || !user.token) return { success: false, message: 'No estás autenticada' };
 
@@ -72,7 +68,7 @@ export function ProductProvider({ children }) {
         body: JSON.stringify({
           ...newProduct,
           priceRetail: Number(newProduct.priceRetail || newProduct.price),
-          stock: Number(newProduct.stock)
+          variants: newProduct.variants || []
         })
       });
 
@@ -93,8 +89,8 @@ export function ProductProvider({ children }) {
     }
   };
 
-  // Actualizar stock directamente en vivo en MongoDB
-  const updateStock = async (id, newStock) => {
+  // Actualizar producto completo o stock
+  const updateProductData = async (id, updatedFields) => {
     if (!user || !user.token) return;
 
     try {
@@ -104,7 +100,7 @@ export function ProductProvider({ children }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`
         },
-        body: JSON.stringify({ stock: Math.max(0, Number(newStock)) })
+        body: JSON.stringify(updatedFields)
       });
 
       if (res.ok) {
@@ -112,7 +108,7 @@ export function ProductProvider({ children }) {
         setProducts((prev) => prev.map((p) => (p._id === id ? updated : p)));
       }
     } catch (error) {
-      console.error('Error al actualizar stock:', error);
+      console.error('Error al actualizar producto:', error);
     }
   };
 
@@ -136,12 +132,19 @@ export function ProductProvider({ children }) {
     }
   };
 
-  // Descontar stock al realizar una compra
-  const reduceStockOnSale = async (id, qty = 1) => {
-    const target = products.find((p) => p._id === id);
+  // Descontar stock de una variante específica tras la compra
+  const reduceStockOnSale = async (productId, variantId, qty = 1) => {
+    const target = products.find((p) => p._id === productId);
     if (!target) return;
-    const newStock = Math.max(0, target.stock - qty);
-    await updateStock(id, newStock);
+
+    const updatedVariants = target.variants.map((v) => {
+      if (v._id === variantId) {
+        return { ...v, stock: Math.max(0, v.stock - qty) };
+      }
+      return v;
+    });
+
+    await updateProductData(productId, { variants: updatedVariants });
   };
 
   return (
@@ -151,7 +154,7 @@ export function ProductProvider({ children }) {
         loading,
         fetchProducts,
         addProduct,
-        updateStock,
+        updateProductData,
         deleteProduct,
         reduceStockOnSale
       }}

@@ -1,28 +1,41 @@
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { CartContext } from '../context/CartContext';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useContext(CartContext);
 
+  const totalStock = product.stockTotal !== undefined ? product.stockTotal : (product.stock || 0);
+  const isOutOfStock = totalStock <= 0;
   const currentPrice = Number(product.priceRetail || product.price || 0);
-  const isOutOfStock = product.stock <= 0;
+
+  const availableVariants = (product.variants || []).filter((v) => v.stock > 0);
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    availableVariants.length > 0 ? availableVariants[0]._id : ''
+  );
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
 
-    if (product.stock < 1) {
-      alert(`⚠️ Solo quedan ${product.stock} unidades disponibles.`);
+    if (product.variants && product.variants.length > 0 && !selectedVariantId) {
+      alert('⚠️ Por favor elegí un talle y color antes de agregar al carrito.');
       return;
     }
 
+    const selectedVariant = product.variants?.find((v) => v._id === selectedVariantId);
+
     const productToCart = {
       ...product,
-      price: currentPrice
+      price: currentPrice,
+      selectedVariant: selectedVariant ? {
+        _id: selectedVariant._id,
+        size: selectedVariant.size,
+        color: selectedVariant.color
+      } : null
     };
 
     addToCart(productToCart, 1);
     
-    alert(`🛒 ¡Agregado al carrito!`);
+    alert(`🛒 ¡Agregado al carrito!${selectedVariant ? ` (${selectedVariant.size} - ${selectedVariant.color})` : ''}`);
   };
 
   return (
@@ -36,7 +49,7 @@ export default function ProductCard({ product }) {
           </span>
         ) : (
           <span className="bg-stone-100 text-stone-600 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 border border-stone-200 rounded-xs">
-            Stock: {product.stock} u.
+            Stock: {totalStock} u.
           </span>
         )}
       </div>
@@ -65,6 +78,26 @@ export default function ProductCard({ product }) {
             {product.description || 'Sin descripción disponible.'}
           </p>
         </div>
+
+        {/* SELECTOR DE VARIANTE (TALLES Y COLORES) */}
+        {!isOutOfStock && product.variants && product.variants.length > 0 && (
+          <div className="pt-2">
+            <label className="block text-[9px] font-bold text-stone-500 uppercase mb-1">
+              Talle y Color:
+            </label>
+            <select
+              value={selectedVariantId}
+              onChange={(e) => setSelectedVariantId(e.target.value)}
+              className="w-full text-xs border border-stone-300 rounded px-2 py-1 bg-stone-50 focus:outline-none focus:ring-1 focus:ring-stone-800"
+            >
+              {product.variants.map((v) => (
+                <option key={v._id} value={v._id} disabled={v.stock <= 0}>
+                  {v.size} - {v.color} {v.stock <= 0 ? '(Agotado)' : `(${v.stock} u.)`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* VALOR Y BOTÓN */}
         <div className="pt-3 border-t border-stone-100 space-y-2">

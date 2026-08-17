@@ -57,6 +57,7 @@ export default function Catalogo() {
   const [categoryFilter, setCategoryFilter] = useState('Todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [modalProduct, setModalProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   // EFECTO PARA TÍTULO DE PESTAÑA
@@ -73,24 +74,22 @@ export default function Catalogo() {
           const data = await response.json();
           setProducts(data);
 
-          // Chequear si viene un producto en particular por URL desde el Home
           const prodId = searchParams.get('producto');
           if (prodId) {
             const found = data.find((p) => p._id === prodId);
-            if (found) setModalProduct(found);
+            if (found) {
+              setModalProduct(found);
+              if (found.variants && found.variants.length > 0) {
+                setSelectedVariant(found.variants[0]);
+              }
+            }
           }
 
-          // Chequear si viene una búsqueda por URL
           const busquedaParam = searchParams.get('busqueda');
-          if (busquedaParam) {
-            setSearchTerm(busquedaParam);
-          }
+          if (busquedaParam) setSearchTerm(busquedaParam);
 
-          // Chequear si viene una categoría por URL
           const catParam = searchParams.get('categoria');
-          if (catParam) {
-            setCategoryFilter(catParam);
-          }
+          if (catParam) setCategoryFilter(catParam);
         }
       } catch (error) {
         console.error("Error al cargar productos del catálogo:", error);
@@ -102,7 +101,16 @@ export default function Catalogo() {
     fetchProducts();
   }, [searchParams]);
 
-  // CATEGORÍAS DINÁMICAS OBTENIDAS DE LA BASE DE DATOS
+  // Al abrir modal, autoseleccionar primera variante si existe
+  const handleOpenModal = (product) => {
+    setModalProduct(product);
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0]);
+    } else {
+      setSelectedVariant(null);
+    }
+  };
+
   const categories = [
     'Todas',
     ...Array.from(
@@ -121,11 +129,13 @@ export default function Catalogo() {
     }, 2500);
   };
 
-  const handleAddToCart = (product, e) => {
+  const handleAddToCart = (product, variant, e) => {
     if (e) e.stopPropagation();
     const currentPrice = Number(product.priceRetail || product.price || 0);
 
-    if (product.stock < 1) {
+    const availableStock = variant ? variant.stock : product.stock;
+
+    if (availableStock < 1) {
       showToast(`⚠️ Sin stock disponible`, 0);
       return;
     }
@@ -135,7 +145,7 @@ export default function Catalogo() {
       price: currentPrice
     };
 
-    addToCart(productToCart, 1);
+    addToCart(productToCart, 1, variant);
     showToast(product.name, 1);
   };
 
@@ -169,7 +179,7 @@ export default function Catalogo() {
         </div>
       )}
 
-      {/* CABECERA DE SECCIÓN */}
+      {/* CABECERA */}
       <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-1.5">
         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-rose-800">
           Colección Exclusiva
@@ -192,7 +202,6 @@ export default function Catalogo() {
           <span className="absolute left-2.5 top-2.5 text-xs text-stone-400">🔍</span>
         </div>
 
-        {/* BOTONES DE CATEGORÍA DINÁMICOS */}
         <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto justify-center">
           {categories.map((cat) => (
             <button
@@ -225,15 +234,16 @@ export default function Catalogo() {
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {filteredProducts.map((item) => {
             const price = item.priceRetail || item.price || 0;
-            const inStock = item.stock > 0;
+            const inStock = item.variants && item.variants.length > 0
+              ? item.variants.some((v) => v.stock > 0)
+              : item.stock > 0;
 
             return (
               <div
                 key={item._id}
-                onClick={() => setModalProduct(item)}
+                onClick={() => handleOpenModal(item)}
                 className="bg-white rounded-xs border border-rose-100 shadow-2xs hover:border-rose-300 transition duration-300 flex flex-col overflow-hidden group cursor-pointer"
               >
-                {/* MARCO DE IMAGEN CON AUTO-AJUSTE */}
                 <div className="relative h-64 sm:h-72 w-full bg-stone-50/50 p-2 border-b border-stone-100 overflow-hidden flex items-center justify-center">
                   <SafeImage src={item.image} alt={item.name} fit="contain" />
                   
@@ -263,20 +273,18 @@ export default function Catalogo() {
                         ${Number(price).toLocaleString('es-AR')}
                       </p>
                       <span className={`text-[8px] font-bold uppercase ${inStock ? 'text-emerald-700' : 'text-rose-500'}`}>
-                        {inStock ? `Stock: ${item.stock}` : 'Sin Stock'}
+                        {inStock ? 'Disponible' : 'Sin Stock'}
                       </span>
                     </div>
 
                     <button
-                      onClick={(e) => handleAddToCart(item, e)}
-                      disabled={!inStock}
-                      className={`w-full py-2 text-[9px] font-medium uppercase tracking-[0.15em] transition ${
-                        inStock
-                          ? 'bg-stone-900 text-white hover:bg-stone-800 cursor-pointer'
-                          : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(item);
+                      }}
+                      className="w-full py-2 text-[9px] font-medium uppercase tracking-[0.15em] transition bg-stone-900 text-white hover:bg-stone-800 cursor-pointer"
                     >
-                      {inStock ? 'Agregar al Carrito' : 'Agotado'}
+                      Ver Opciones / Elegir Talle
                     </button>
                   </div>
                 </div>
@@ -308,7 +316,6 @@ export default function Catalogo() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-y-auto">
               
-              {/* IMAGEN DEL MODAL CON AJUSTE COMPLETO */}
               <div className="md:col-span-6 bg-stone-50 p-4 flex items-center justify-center h-80 sm:h-[450px]">
                 <SafeImage
                   src={modalProduct.detailImage || modalProduct.image}
@@ -318,7 +325,6 @@ export default function Catalogo() {
                 />
               </div>
 
-              {/* DETALLES DE LA PRENDA */}
               <div className="md:col-span-6 p-6 flex flex-col justify-between space-y-6 bg-white border-t md:border-t-0 md:border-l border-rose-100">
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold tracking-[0.25em] text-rose-800 uppercase">
@@ -328,9 +334,33 @@ export default function Catalogo() {
                     {modalProduct.name}
                   </h2>
                   <div className="w-10 h-0.5 bg-rose-300 rounded-full my-2"></div>
-                  <p className="text-xs text-stone-600 leading-relaxed max-h-48 overflow-y-auto pr-1 font-light">
+                  <p className="text-xs text-stone-600 leading-relaxed max-h-36 overflow-y-auto pr-1 font-light">
                     {modalProduct.description || 'Sin descripción detallada disponible para esta prenda.'}
                   </p>
+
+                  {/* SELECCIÓN DE TALLES Y COLORES */}
+                  {modalProduct.variants && modalProduct.variants.length > 0 && (
+                    <div className="pt-2 space-y-2">
+                      <label className="text-[10px] font-bold uppercase text-stone-700 tracking-wider block">
+                        Elegí Talle y Color:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {modalProduct.variants.map((v, idx) => (
+                          <button
+                            key={v._id || idx}
+                            onClick={() => setSelectedVariant(v)}
+                            className={`px-2.5 py-1.5 text-[11px] rounded-xs border transition cursor-pointer ${
+                              selectedVariant && (selectedVariant._id === v._id || (selectedVariant.size === v.size && selectedVariant.color === v.color))
+                                ? 'bg-stone-900 text-white border-stone-900 font-bold'
+                                : 'bg-stone-50 text-stone-700 border-stone-200 hover:border-stone-400'
+                            }`}
+                          >
+                            {v.size} - {v.color} ({v.stock > 0 ? `Stock: ${v.stock}` : 'Agotado'})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-rose-100">
@@ -341,24 +371,28 @@ export default function Catalogo() {
                         ${Number(modalProduct.priceRetail || modalProduct.price || 0).toLocaleString('es-AR')}
                       </span>
                     </div>
-                    <span className={`text-[10px] font-bold px-3 py-1 rounded-xs uppercase tracking-wider ${modalProduct.stock > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
-                      {modalProduct.stock > 0 ? `Stock: ${modalProduct.stock}` : 'Agotado'}
+                    <span className={`text-[10px] font-bold px-3 py-1 rounded-xs uppercase tracking-wider ${
+                      (selectedVariant ? selectedVariant.stock : modalProduct.stock) > 0 
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                        : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    }`}>
+                      {(selectedVariant ? selectedVariant.stock : modalProduct.stock) > 0 ? `Stock: ${selectedVariant ? selectedVariant.stock : modalProduct.stock}` : 'Agotado'}
                     </span>
                   </div>
 
                   <button
                     onClick={() => {
-                      handleAddToCart(modalProduct);
+                      handleAddToCart(modalProduct, selectedVariant);
                       setModalProduct(null);
                     }}
-                    disabled={modalProduct.stock <= 0}
+                    disabled={(selectedVariant ? selectedVariant.stock : modalProduct.stock) <= 0}
                     className={`w-full py-3 text-xs font-semibold uppercase tracking-[0.2em] transition shadow-xs cursor-pointer ${
-                      modalProduct.stock > 0
+                      (selectedVariant ? selectedVariant.stock : modalProduct.stock) > 0
                         ? 'bg-stone-900 hover:bg-stone-800 text-white'
                         : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                     }`}
                   >
-                    {modalProduct.stock > 0 ? 'Agregar al Carrito' : 'Sin Stock'}
+                    {(selectedVariant ? selectedVariant.stock : modalProduct.stock) > 0 ? 'Agregar al Carrito' : 'Sin Stock'}
                   </button>
                 </div>
               </div>

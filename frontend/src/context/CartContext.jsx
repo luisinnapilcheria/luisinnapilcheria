@@ -22,12 +22,16 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Agregar al carrito
+  // Agregar al carrito (Soporta combinación de Producto + Variante/Talle/Color)
   const addToCart = (product, quantityToAdd = 1) => {
     if (!product || !product._id) return;
 
+    const variantId = product.selectedVariant?._id || 'unique';
+    // Generamos un ID único para la combinación prenda + talle/color
+    const cartItemId = `${product._id}_${variantId}`;
+
     setCartItems((prevItems) => {
-      const exists = prevItems.find((x) => x._id === product._id);
+      const exists = prevItems.find((x) => x.cartItemId === cartItemId);
       
       // Normalizar precio para minorista
       const actualPrice = Number(product.priceRetail || product.price || 0);
@@ -37,7 +41,7 @@ export const CartProvider = ({ children }) => {
         const newQty = currentQty + quantityToAdd;
 
         return prevItems.map((x) =>
-          x._id === product._id 
+          x.cartItemId === cartItemId 
             ? { 
                 ...x, 
                 qty: newQty, 
@@ -47,9 +51,11 @@ export const CartProvider = ({ children }) => {
         );
       }
 
-      // Si es un producto nuevo
+      // Si es una combinación variante/producto nueva
       const newProduct = { 
-        ...product, 
+        ...product,
+        cartItemId,
+        variantId,
         price: actualPrice,
         priceRetail: actualPrice,
         qty: quantityToAdd,
@@ -60,12 +66,12 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  // Actualizar cantidad específica (+1 / -1)
-  const updateQuantity = (id, delta) => {
+  // Actualizar cantidad específica (+1 / -1) usando cartItemId
+  const updateQuantity = (cartItemId, delta) => {
     setCartItems((prevItems) =>
       prevItems
         .map((item) => {
-          if (item._id === id) {
+          if (item.cartItemId === cartItemId || item._id === cartItemId) {
             const currentQty = item.qty || item.quantity || 1;
             const newQty = currentQty + delta;
             return newQty > 0 
@@ -78,9 +84,11 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // Eliminar producto
-  const removeFromCart = (id) => {
-    setCartItems((prevItems) => prevItems.filter((x) => x && x._id !== id));
+  // Eliminar producto/variante del carrito
+  const removeFromCart = (cartItemId) => {
+    setCartItems((prevItems) => 
+      prevItems.filter((x) => x && x.cartItemId !== cartItemId && x._id !== cartItemId)
+    );
   };
 
   // Vaciar carrito
@@ -89,7 +97,7 @@ export const CartProvider = ({ children }) => {
   // CÁLCULOS DE MONTO SEGUROS
   const cartTotal = cartItems.reduce((acc, item) => {
     if (!item) return acc;
-    const price = Number(item.priceRetail || item.price || 0);
+    const price = Number(item.priceRetail || item.price || 0)
     const quantity = Number(item.qty || item.quantity || 0);
     return acc + (price * quantity);
   }, 0);

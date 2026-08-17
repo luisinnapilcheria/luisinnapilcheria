@@ -32,7 +32,7 @@ exports.getTopProducts = async (req, res) => {
   }
 };
 
-// Crear producto (Admin / Dueña) - Soporta Minorista + Mayorista + Foto Detalle
+// Crear producto (Admin / Dueña) - Soporta Variantes (Talle/Color), Minorista, Mayorista y Fotos
 exports.createProduct = async (req, res) => {
   try {
     const { 
@@ -45,13 +45,24 @@ exports.createProduct = async (req, res) => {
       minWholesaleQty,
       isWholesale,
       stock, 
+      variants, // 👈 Matriz de variantes [ { size, color, stock }, ... ]
       image, 
-      detailImage, // 👈 Capturamos la foto ampliada
+      detailImage,
       destacado 
     } = req.body;
 
     const finalRetailPrice = Number(priceRetail || price || 0);
     const finalWholesalePrice = Number(priceWholesale || 0);
+
+    // Procesamiento de variantes: si no se envían variantes, se genera una por defecto basada en "stock"
+    let finalVariants = Array.isArray(variants) ? variants : [];
+    if (finalVariants.length === 0 && stock !== undefined) {
+      finalVariants.push({
+        size: 'Único',
+        color: 'Surtido',
+        stock: Number(stock || 0)
+      });
+    }
 
     const productData = {
       name,
@@ -62,15 +73,15 @@ exports.createProduct = async (req, res) => {
       priceWholesale: finalWholesalePrice,
       minWholesaleQty: Number(minWholesaleQty || 1),
       isWholesale: isWholesale !== undefined ? Boolean(isWholesale) : finalWholesalePrice > 0,
-      stock: Number(stock || 0),
+      variants: finalVariants, // 👈 Se guardan las variantes
       image: image || '',
-      detailImage: detailImage || '', // 👈 Se guarda en MongoDB al crear
+      detailImage: detailImage || '',
       destacado: Boolean(destacado),
       salesCount: 0
     };
 
     const product = new Product(productData);
-    const createdProduct = await product.save();
+    const createdProduct = await product.save(); // 🔄 El pre('save') calculará el stockTotal
     res.status(201).json(createdProduct);
   } catch (error) {
     console.error("❌ Error interno al crear producto:", error);
@@ -78,9 +89,14 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Actualizar producto (Admin / Dueña) - Preserva lógica Mayorista y Foto Detalle
+// Actualizar producto (Admin / Dueña) - Preserva variantes y recalcula stockTotal
 exports.updateProduct = async (req, res) => {
   try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
     const updateData = { ...req.body };
     
     if (updateData.priceRetail || updateData.price) {
@@ -97,11 +113,21 @@ exports.updateProduct = async (req, res) => {
       updateData.minWholesaleQty = Number(updateData.minWholesaleQty || 1);
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id, 
-      updateData, 
-      { new: true, runValidators: true }
-    );
+    // Si viene actualización de stock directo (sin variantes en el body), actualiza o genera una variante por defecto
+    if (updateData.stock !== undefined && (!updateData.variants || updateData.variants.length === 0)) {
+      if (product.variants && product.variants.length > 0) {
+        product.variants[0].stock = Number(updateData.stock);
+      } else {
+        product.variants = [{ size: 'Único', color: 'Surtido', stock: Number(updateData.stock) }];
+      }
+      delete updateData.stock;
+    }
+
+    // Asignar los campos actualizados al documento existente
+    Object.assign(product, updateData);
+
+    // Guardar mediante .save() para disparar el hook pre('save') que recalcula stockTotal
+    const updatedProduct = await product.save();
     res.json(updatedProduct);
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar producto', error: error.message });

@@ -182,8 +182,14 @@ export default function Home() {
   };
 
   const handleAddProduct = (item) => {
+    // Si la prenda tiene variantes, redirigir al catálogo para que elija talle y color
+    if (item.variants && item.variants.length > 0) {
+      navigate(`/catalogo?producto=${item._id}`);
+      return;
+    }
+
     const price = item.priceRetail || item.price || 0;
-    addToCart({ ...item, price }, 1);
+    addToCart({ ...item, price }, 1, null);
     alert(`🛒 ¡"${item.name}" agregado al carrito!`);
   };
 
@@ -308,7 +314,6 @@ export default function Home() {
             >
               {photoGroups.map((group, groupIndex) => (
                 <SwiperSlide key={groupIndex} className="pb-6">
-                  {/* Grid de 5 columnas con altura incrementada */}
                   <div className="grid grid-cols-5 gap-0.5 sm:gap-1 h-64 sm:h-80 md:h-[420px] w-full overflow-hidden shadow-xs bg-stone-200 border-y border-stone-200">
                     {group.map((product) => (
                       <div 
@@ -376,12 +381,12 @@ export default function Home() {
                   Nuevo
                 </span>
 
-                <div className="relative h-44 sm:h-48 w-full bg-stone-50 p-1 rounded-xs mb-3 overflow-hidden border border-stone-100 flex items-center justify-center">
+                <div className="relative h-44 sm:h-48 w-full bg-stone-50 p-1 rounded-xs mb-3 overflow-hidden border border-stone-100 flex items-center justify-center cursor-pointer" onClick={() => handleSelectProduct(item._id)}>
                   <SafeImage src={item.image} alt={item.name} fit="cover" />
                 </div>
 
                 <div className="space-y-1.5">
-                  <h3 className="text-[11px] font-medium tracking-wider text-stone-700 uppercase truncate" title={item.name}>
+                  <h3 className="text-[11px] font-medium tracking-wider text-stone-700 uppercase truncate cursor-pointer" title={item.name} onClick={() => handleSelectProduct(item._id)}>
                     {item.name}
                   </h3>
                   <p className="text-xs font-semibold text-stone-900 pb-0.5">
@@ -391,7 +396,7 @@ export default function Home() {
                     onClick={() => handleAddProduct(item)}
                     className="w-full bg-stone-900 text-white py-2 text-[9px] font-medium uppercase tracking-[0.15em] hover:bg-stone-800 transition rounded-none cursor-pointer"
                   >
-                    Agregar al carrito
+                    {item.variants && item.variants.length > 0 ? 'Ver Opciones / Elegir Talle' : 'Agregar al Carrito'}
                   </button>
                 </div>
               </div>

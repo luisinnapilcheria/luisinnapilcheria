@@ -42,7 +42,6 @@ const SafeImage = ({ src, alt, className = "" }) => {
 export default function AdminPanel() {
   const authContext = useContext(AuthContext);
 
-  // Estados de Autenticación Local
   const [token, setToken] = useState(() => {
     if (authContext?.token) return authContext.token;
     try {
@@ -62,10 +61,8 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Navegación de Pestañas ('products' | 'orders')
   const [activeTab, setActiveTab] = useState('products');
 
-  // Estados de Productos
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -73,7 +70,6 @@ export default function AdminPanel() {
   const [imageMode, setImageMode] = useState('file');
   const [detailImageMode, setDetailImageMode] = useState('file');
 
-  // Estados de Pedidos
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -83,10 +79,10 @@ export default function AdminPanel() {
     category: 'Remeras',
     description: '',
     priceRetail: '',
-    stock: '',
     image: '',
     detailImage: '',
-    destacado: false
+    destacado: false,
+    variants: [{ size: '', color: '', stock: 0 }]
   });
 
   const handleLoginSubmit = async (e) => {
@@ -118,7 +114,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Cargar Productos
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -134,15 +129,12 @@ export default function AdminPanel() {
     }
   };
 
-  // Cargar Pedidos (Con cabecera Authorization)
   const loadOrders = async () => {
     if (!token) return;
     setOrdersLoading(true);
     try {
       const res = await fetch(`${API_URL}/orders`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -165,7 +157,6 @@ export default function AdminPanel() {
     }
   }, [token]);
 
-  // Cambiar estado de un pedido
   const handleOrderStatusChange = async (orderId, newStatus) => {
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -189,7 +180,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Copiar etiqueta de envío
   const copyShippingData = (order) => {
     const c = order.customer || {};
     const text = `📦 DATOS DE ENVÍO - LUISINNA PILCHERIA\n----------------------------------\n👤 Destinatario: ${c.fullName}\n📱 WhatsApp: ${c.phone}\n📄 DNI/CUIT: ${c.dni} (${c.taxType})\n🏙️ Localidad: ${c.city || 'No especificada'}\n📍 Dirección: ${c.address}\n📝 Notas: ${c.notes || 'Sin observaciones'}\n💰 Total Pedido: $${order.total?.toLocaleString('es-AR')}`;
@@ -207,6 +197,30 @@ export default function AdminPanel() {
     }));
   };
 
+  const handleVariantChange = (index, field, value) => {
+    const updatedVariants = [...formData.variants];
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: field === 'stock' ? Number(value) : value
+    };
+    setFormData((prev) => ({ ...prev, variants: updatedVariants }));
+  };
+
+  const addVariantRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: [...prev.variants, { size: '', color: '', stock: 0 }]
+    }));
+  };
+
+  const removeVariantRow = (index) => {
+    if (formData.variants.length === 1) return;
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleFileUpload = (e, fieldName = 'image') => {
     const file = e.target.files[0];
     if (!file) return;
@@ -218,10 +232,7 @@ export default function AdminPanel() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        [fieldName]: reader.result
-      }));
+      setFormData((prev) => ({ ...prev, [fieldName]: reader.result }));
     };
     reader.readAsDataURL(file);
   };
@@ -233,10 +244,12 @@ export default function AdminPanel() {
       category: product.category || 'Remeras',
       description: product.description || '',
       priceRetail: product.priceRetail || product.price || '',
-      stock: product.stock ?? '',
       image: product.image || '',
       detailImage: product.detailImage || '',
-      destacado: product.destacado || false
+      destacado: product.destacado || false,
+      variants: product.variants && product.variants.length > 0 
+        ? product.variants 
+        : [{ size: '', color: '', stock: product.stock || 0 }]
     });
 
     setImageMode(product.image?.startsWith('http') ? 'url' : 'file');
@@ -251,10 +264,10 @@ export default function AdminPanel() {
       category: 'Remeras',
       description: '',
       priceRetail: '',
-      stock: '',
       image: '',
       detailImage: '',
-      destacado: false
+      destacado: false,
+      variants: [{ size: '', color: '', stock: 0 }]
     });
   };
 
@@ -266,6 +279,12 @@ export default function AdminPanel() {
     const url = isEditing ? `${API_URL}/products/${editingId}` : `${API_URL}/products`;
     const method = isEditing ? 'PUT' : 'POST';
 
+    const payload = {
+      ...formData,
+      priceRetail: Number(formData.priceRetail),
+      variants: formData.variants.filter(v => v.size || v.color || v.stock > 0)
+    };
+
     try {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -273,7 +292,7 @@ export default function AdminPanel() {
       const response = await fetch(url, {
         method: method,
         headers,
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -321,23 +340,15 @@ export default function AdminPanel() {
   };
 
   const sortedOrders = [...orders].sort((a, b) => {
-    const priority = {
-      'pendiente_pago': 1,
-      'pagado': 2,
-      'despachado': 3,
-      'cancelado': 4
-    };
-
+    const priority = { 'pendiente_pago': 1, 'pagado': 2, 'despachado': 3, 'cancelado': 4 };
     const pA = priority[a.status] || 99;
     const pB = priority[b.status] || 99;
-
     if (pA !== pB) return pA - pB;
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const pendingCount = orders.filter(o => o.status === 'pendiente_pago').length;
 
-  // SI NO HAY TOKEN, SE MUESTRA EL FORMULARIO DE ACCESO AL PANEL
   if (!token) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
@@ -393,16 +404,12 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 font-sans">
-      
-      {/* 🧭 NAVEGACIÓN DE PESTAÑAS Y HEADER DEL PANEL */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-rose-100 pb-3 gap-4">
         <div className="flex border-b sm:border-b-0 border-stone-200 gap-2">
           <button
             onClick={() => setActiveTab('products')}
             className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 cursor-pointer ${
-              activeTab === 'products'
-                ? 'border-stone-900 text-stone-900'
-                : 'border-transparent text-stone-400 hover:text-stone-700'
+              activeTab === 'products' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-400 hover:text-stone-700'
             }`}
           >
             📦 Manejo de Stock ({products.length})
@@ -413,9 +420,7 @@ export default function AdminPanel() {
               loadOrders();
             }}
             className={`pb-3 px-4 font-bold text-xs uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'orders'
-                ? 'border-stone-900 text-stone-900'
-                : 'border-transparent text-stone-400 hover:text-stone-700'
+              activeTab === 'orders' ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-400 hover:text-stone-700'
             }`}
           >
             <span>🛍️ Control de Pedidos</span>
@@ -447,10 +452,8 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* ================= PESTAÑA 1: INVENTARIO DE PRODUCTOS ================= */}
       {activeTab === 'products' && (
         <div className="space-y-8">
-          {/* FORMULARIO DE CREACIÓN / EDICIÓN */}
           <div className={`p-6 rounded-xl shadow-xs border transition-colors ${
             editingId ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-rose-100'
           }`}>
@@ -500,7 +503,7 @@ export default function AdminPanel() {
                   <option value="Sweaters">Sweaters</option>
                   <option value="Polleras">Polleras</option>
                   <option value="Camperas">Camperas</option>
-                  <option value="Camperas">Jeans</option>
+                  <option value="Jeans">Jeans</option>
                   <option value="Otros">Otros</option>
                 </select>
               </div>
@@ -531,18 +534,53 @@ export default function AdminPanel() {
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold mb-1 text-stone-700">Stock Disponible *</label>
-                <input
-                  type="number"
-                  name="stock"
-                  required
-                  min="0"
-                  placeholder="10"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
-                />
+              {/* SECCIÓN DE VARIANTES (TALLES, COLORES Y STOCK) */}
+              <div className="md:col-span-2 bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-3">
+                <label className="block font-bold text-stone-800 text-xs uppercase tracking-wider">
+                  Variantes (Talle, Color y Stock por Unidad)
+                </label>
+                {formData.variants.map((v, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Talle (ej: S, M, 38)"
+                      value={v.size}
+                      onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
+                      className="w-1/3 p-2 bg-white border border-stone-300 rounded-md"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Color (ej: Negro, Blanco)"
+                      value={v.color}
+                      onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
+                      className="w-1/3 p-2 bg-white border border-stone-300 rounded-md"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Stock"
+                      min="0"
+                      value={v.stock}
+                      onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                      className="w-1/4 p-2 bg-white border border-stone-300 rounded-md"
+                    />
+                    {formData.variants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVariantRow(index)}
+                        className="text-rose-600 font-bold px-2 py-1 text-sm hover:text-rose-800"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addVariantRow}
+                  className="text-[11px] font-bold text-stone-700 hover:text-stone-900 uppercase tracking-wider transition"
+                >
+                  + Agregar otra variante
+                </button>
               </div>
 
               {/* IMAGEN MINIATURA */}
@@ -551,15 +589,12 @@ export default function AdminPanel() {
                   <label className="block font-bold text-stone-800 text-xs">
                     📸 Imagen Principal (Catálogo y Home) *
                   </label>
-                  
                   <div className="flex gap-2 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setImageMode('file')}
                       className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        imageMode === 'file'
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
+                        imageMode === 'file' ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
                       📁 Archivo
@@ -568,9 +603,7 @@ export default function AdminPanel() {
                       type="button"
                       onClick={() => setImageMode('url')}
                       className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        imageMode === 'url'
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
+                        imageMode === 'url' ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
                       🌐 URL
@@ -591,26 +624,19 @@ export default function AdminPanel() {
                         <p className="text-[10px] text-stone-400 mt-1">Soporta JPG, PNG, WEBP.</p>
                       </div>
                     ) : (
-                      <div>
-                        <input
-                          type="text"
-                          name="image"
-                          placeholder="https://ejemplo.com/foto-prenda.jpg"
-                          value={formData.image}
-                          onChange={handleChange}
-                          className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        name="image"
+                        placeholder="https://ejemplo.com/foto-prenda.jpg"
+                        value={formData.image}
+                        onChange={handleChange}
+                        className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+                      />
                     )}
                   </div>
-
                   <div className="flex flex-col items-center justify-center">
                     <span className="text-[10px] font-bold text-stone-500 mb-1">Vista Previa</span>
-                    <SafeImage
-                      src={formData.image}
-                      alt="Miniatura"
-                      className="w-16 h-16 shadow-xs"
-                    />
+                    <SafeImage src={formData.image} alt="Miniatura" className="w-16 h-16 shadow-xs" />
                   </div>
                 </div>
               </div>
@@ -621,15 +647,12 @@ export default function AdminPanel() {
                   <label className="block font-bold text-rose-900 text-xs">
                     🔍 Foto Ampliada (Para el Pop-up / Opcional)
                   </label>
-                  
                   <div className="flex gap-2 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setDetailImageMode('file')}
                       className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        detailImageMode === 'file'
-                          ? 'bg-rose-800 text-white'
-                          : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
+                        detailImageMode === 'file' ? 'bg-rose-800 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
                       📁 Archivo
@@ -638,9 +661,7 @@ export default function AdminPanel() {
                       type="button"
                       onClick={() => setDetailImageMode('url')}
                       className={`px-2 py-1 rounded font-semibold transition cursor-pointer ${
-                        detailImageMode === 'url'
-                          ? 'bg-rose-800 text-white'
-                          : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
+                        detailImageMode === 'url' ? 'bg-rose-800 text-white' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
                       }`}
                     >
                       🌐 URL
@@ -661,26 +682,19 @@ export default function AdminPanel() {
                         <p className="text-[10px] text-rose-700 mt-1">Si la dejás vacía, se usará automáticamente la foto principal.</p>
                       </div>
                     ) : (
-                      <div>
-                        <input
-                          type="text"
-                          name="detailImage"
-                          placeholder="https://ejemplo.com/foto-hd.jpg"
-                          value={formData.detailImage}
-                          onChange={handleChange}
-                          className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        name="detailImage"
+                        placeholder="https://ejemplo.com/foto-hd.jpg"
+                        value={formData.detailImage}
+                        onChange={handleChange}
+                        className="w-full p-2.5 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-800"
+                      />
                     )}
                   </div>
-
                   <div className="flex flex-col items-center justify-center">
                     <span className="text-[10px] font-bold text-rose-800 mb-1">Vista Previa HD</span>
-                    <SafeImage
-                      src={formData.detailImage}
-                      alt="Detalle"
-                      className="w-16 h-16 shadow-xs border-rose-300"
-                    />
+                    <SafeImage src={formData.detailImage} alt="Detalle" className="w-16 h-16 shadow-xs border-rose-300" />
                   </div>
                 </div>
               </div>
@@ -704,11 +718,7 @@ export default function AdminPanel() {
                   type="submit"
                   disabled={isSubmitting}
                   className={`w-full py-3 text-white font-bold rounded-lg uppercase tracking-wider text-xs transition shadow-xs cursor-pointer ${
-                    isSubmitting
-                      ? 'bg-stone-400 cursor-not-allowed'
-                      : editingId
-                      ? 'bg-rose-800 hover:bg-rose-900'
-                      : 'bg-stone-900 hover:bg-stone-800'
+                    isSubmitting ? 'bg-stone-400 cursor-not-allowed' : editingId ? 'bg-rose-800 hover:bg-rose-900' : 'bg-stone-900 hover:bg-stone-800'
                   }`}
                 >
                   {isSubmitting ? 'Guardando...' : editingId ? '💾 Guardar Cambios' : '➕ Crear Prenda'}
@@ -717,7 +727,6 @@ export default function AdminPanel() {
             </form>
           </div>
 
-          {/* TABLA DE INVENTARIO DE PRODUCTOS */}
           <div className="bg-white p-6 rounded-xl shadow-xs border border-rose-100">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-base font-bold text-stone-800 flex items-center gap-2">
@@ -734,7 +743,7 @@ export default function AdminPanel() {
                     <th className="p-3">Prenda</th>
                     <th className="p-3">Categoría</th>
                     <th className="p-3">Precio</th>
-                    <th className="p-3">Stock</th>
+                    <th className="p-3">Variantes y Stock</th>
                     <th className="p-3 text-center">Acciones</th>
                   </tr>
                 </thead>
@@ -746,63 +755,72 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ) : (
-                    products.map((item) => (
-                      <tr key={item._id} className="hover:bg-stone-50/80 transition">
-                        <td className="p-2.5 flex gap-1 items-center">
-                          <SafeImage
-                            src={item.image}
-                            alt={item.name}
-                            className="w-10 h-10"
-                            title="Miniatura"
-                          />
-                          {item.detailImage && (
-                            <SafeImage
-                              src={item.detailImage}
-                              alt="Detalle"
-                              className="w-10 h-10 border-rose-200"
-                              title="Foto Detalle (Pop-up)"
-                            />
-                          )}
-                        </td>
-                        <td className="p-3 font-bold text-stone-800 max-w-[180px]">
-                          <div>{item.name}</div>
-                          {item.destacado && (
-                            <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[9px] font-semibold rounded">
-                              ★ Destacado
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-stone-600 font-medium">{item.category}</td>
-                        <td className="p-3 font-bold text-stone-900">
-                          ${Number(item.priceRetail || item.price || 0).toLocaleString('es-AR')}
-                        </td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.stock > 5 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                          }`}>
-                            {item.stock} u.
-                          </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex justify-center items-center gap-1.5">
-                            <button
-                              onClick={() => handleEditClick(item)}
-                              className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-md font-semibold transition cursor-pointer"
-                              title="Editar"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item._id)}
-                              className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md font-semibold transition cursor-pointer"
-                              title="Eliminar"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    products.map((item) => {
+                      const totalStock = item.variants && item.variants.length > 0 
+                        ? item.variants.reduce((acc, curr) => acc + (curr.stock || 0), 0)
+                        : item.stock || 0;
+
+                      return (
+                        <tr key={item._id} className="hover:bg-stone-50/80 transition">
+                          <td className="p-2.5 flex gap-1 items-center">
+                            <SafeImage src={item.image} alt={item.name} className="w-10 h-10" title="Miniatura" />
+                            {item.detailImage && (
+                              <SafeImage src={item.detailImage} alt="Detalle" className="w-10 h-10 border-rose-200" title="Foto Detalle (Pop-up)" />
+                            )}
+                          </td>
+                          <td className="p-3 font-bold text-stone-800 max-w-[180px]">
+                            <div>{item.name}</div>
+                            {item.destacado && (
+                              <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[9px] font-semibold rounded">
+                                ★ Destacado
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-stone-600 font-medium">{item.category}</td>
+                          <td className="p-3 font-bold text-stone-900">
+                            ${Number(item.priceRetail || item.price || 0).toLocaleString('es-AR')}
+                          </td>
+                          <td className="p-3">
+                            {item.variants && item.variants.length > 0 ? (
+                              <div className="space-y-0.5 text-[10px]">
+                                {item.variants.map((v, idx) => (
+                                  <div key={idx} className="text-stone-600">
+                                    <span className="font-semibold">{v.size || 'Único'} - {v.color || 'Estándar'}:</span> {v.stock} u.
+                                  </div>
+                                ))}
+                                <div className="font-bold text-stone-900 pt-0.5 border-t border-stone-200 mt-0.5">
+                                  Total: {totalStock} u.
+                                </div>
+                              </div>
+                            ) : (
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                totalStock > 5 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {totalStock} u.
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center items-center gap-1.5">
+                              <button
+                                onClick={() => handleEditClick(item)}
+                                className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-md font-semibold transition cursor-pointer"
+                                title="Editar"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item._id)}
+                                className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-md font-semibold transition cursor-pointer"
+                                title="Eliminar"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -811,18 +829,14 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ================= PESTAÑA 2: GESTIÓN DE PEDIDOS ================= */}
       {activeTab === 'orders' && (
         <div className="bg-white p-6 rounded-xl shadow-xs border border-stone-200 space-y-4">
-          
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-stone-100 pb-3 gap-2">
             <div>
               <h2 className="text-base font-bold text-stone-800 flex items-center gap-2">
                 <span>🛍️</span> Gestión de Pedidos ({orders.length})
               </h2>
-              <p className="text-xs text-stone-500">
-                Los pedidos están ordenados por urgencia.
-              </p>
+              <p className="text-xs text-stone-500">Los pedidos están ordenados por urgencia.</p>
             </div>
             <button
               onClick={loadOrders}
@@ -859,8 +873,6 @@ export default function AdminPanel() {
                         : 'bg-stone-100/50 border-stone-200 opacity-60'
                     }`}
                   >
-                    
-                    {/* ENCABEZADO Y BADGE DE ESTADO */}
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-stone-200/60 pb-2">
                       <div>
                         <div className="flex items-center gap-2">
@@ -887,7 +899,6 @@ export default function AdminPanel() {
                         </h3>
                       </div>
 
-                      {/* BADGES CON COLORES ALUSIVOS */}
                       <div>
                         {isPending && (
                           <span className="bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 shadow-xs animate-pulse">
@@ -912,7 +923,6 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* DATOS DE ENVÍO Y CLIENTE */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                       <div className="bg-white p-3 rounded-lg border border-stone-200 space-y-1">
                         <p className="font-bold text-[10px] text-stone-400 uppercase tracking-wider">Información de Envío:</p>
@@ -926,13 +936,14 @@ export default function AdminPanel() {
                         )}
                       </div>
 
-                      {/* DETALLE DE PRODUCTOS Y TOTAL */}
                       <div className="bg-white p-3 rounded-lg border border-stone-200 flex flex-col justify-between space-y-2">
                         <div className="space-y-1 max-h-32 overflow-y-auto">
                           <p className="font-bold text-[10px] text-stone-400 uppercase tracking-wider">Prendas Pedidas:</p>
                           {order.items?.map((item, idx) => (
                             <div key={idx} className="flex justify-between text-stone-700">
-                              <span>• {item.name} <strong>x{item.qty}</strong></span>
+                              <span>
+                                • {item.name} {item.size || item.color ? `(${item.size || ''} ${item.color || ''})` : ''} <strong>x{item.qty}</strong>
+                              </span>
                               <span className="font-semibold">${((item.price || 0) * item.qty).toLocaleString('es-AR')}</span>
                             </div>
                           ))}
@@ -945,9 +956,7 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* BOTONES DE ACCIÓN */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200/60">
-                      
                       <button
                         onClick={() => copyShippingData(order)}
                         className="bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer"
@@ -963,9 +972,7 @@ export default function AdminPanel() {
                           onClick={() => handleOrderStatusChange(order._id, 'pendiente_pago')}
                           disabled={isPending}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                            isPending
-                              ? 'bg-rose-200 text-rose-900 cursor-default opacity-60'
-                              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs cursor-pointer'
+                            isPending ? 'bg-rose-200 text-rose-900 cursor-default opacity-60' : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           ⏳ Recibido
@@ -975,9 +982,7 @@ export default function AdminPanel() {
                           onClick={() => handleOrderStatusChange(order._id, 'pagado')}
                           disabled={isPaid}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                            isPaid
-                              ? 'bg-blue-200 text-blue-900 cursor-default opacity-60'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer'
+                            isPaid ? 'bg-blue-200 text-blue-900 cursor-default opacity-60' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           💳 Cobrado
@@ -987,9 +992,7 @@ export default function AdminPanel() {
                           onClick={() => handleOrderStatusChange(order._id, 'despachado')}
                           disabled={isDispatched}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                            isDispatched
-                              ? 'bg-emerald-200 text-emerald-900 cursor-default opacity-60'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer'
+                            isDispatched ? 'bg-emerald-200 text-emerald-900 cursor-default opacity-60' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer'
                           }`}
                         >
                           🚚 Despachado
@@ -1004,9 +1007,7 @@ export default function AdminPanel() {
                           </button>
                         )}
                       </div>
-
                     </div>
-
                   </div>
                 );
               })}
@@ -1014,7 +1015,6 @@ export default function AdminPanel() {
           )}
         </div>
       )}
-
     </div>
   );
 }

@@ -45,17 +45,15 @@ export default function Carrito() {
     document.title = "Carrito - Luisinna Pilcheria";
   }, []);
 
-  // Cargar algunos productos sugeridos para la sección "También te podría interesar"
+  // Cargar algunos productos sugeridos
   useEffect(() => {
     const fetchRelatedProducts = async () => {
       try {
         const response = await fetch(`${API_URL}/products`);
         if (response.ok) {
           const data = await response.json();
-          // Excluir los productos que ya están en el carrito
           const cartIds = new Set(cartItems.map((item) => item._id));
           const filtered = data.filter((p) => !cartIds.has(p._id));
-          // Tomar hasta 3 productos al azar o los primeros
           setRelatedProducts(filtered.slice(0, 3));
         }
       } catch (error) {
@@ -83,7 +81,6 @@ export default function Carrito() {
     return retailPrice;
   };
 
-  // Cálculo directo del subtotal y total final
   const computedSubtotal = cartItems.reduce((acc, item) => {
     return acc + (getItemUnitPrice(item) * item.qty);
   }, 0);
@@ -112,7 +109,12 @@ export default function Carrito() {
           _id: item._id,
           name: item.name,
           qty: Number(item.qty),
-          price: unitPrice
+          price: unitPrice,
+          variant: item.selectedVariant ? {
+            _id: item.selectedVariant._id,
+            size: item.selectedVariant.size,
+            color: item.selectedVariant.color
+          } : null
         };
       }),
       subtotal: computedSubtotal,
@@ -154,7 +156,11 @@ export default function Carrito() {
         const minQty = Number(item.minWholesaleQty) > 0 ? Number(item.minWholesaleQty) : 1;
         const isWholesale = Number(item.priceWholesale) > 0 && item.qty >= minQty;
         
-        message += `• ${item.name} x${item.qty} - $${itemTotal.toLocaleString('es-AR')}${isWholesale ? ' *(Precio Mayorista)*' : ''}\n`;
+        const variantText = item.selectedVariant 
+          ? ` (Talle: ${item.selectedVariant.size} - Color: ${item.selectedVariant.color})` 
+          : '';
+
+        message += `• ${item.name}${variantText} x${item.qty} - $${itemTotal.toLocaleString('es-AR')}${isWholesale ? ' *(Precio Mayorista)*' : ''}\n`;
       });
 
       message += `\n*💰 TOTAL ESTIMADO:* $${computedTotal.toLocaleString('es-AR')}\n\n`;
@@ -223,16 +229,16 @@ export default function Carrito() {
             {step === 'cart' ? (
               <div className="space-y-3">
                 {cartItems.map((item) => {
+                  const itemKey = item.cartItemId || item._id;
                   const unitPrice = getItemUnitPrice(item);
                   const minQty = Number(item.minWholesaleQty) > 0 ? Number(item.minWholesaleQty) : 1;
                   const isWholesale = Number(item.priceWholesale) > 0 && item.qty >= minQty;
 
                   return (
                     <div
-                      key={item._id}
+                      key={itemKey}
                       className="bg-white p-3.5 rounded-xs border border-rose-100 shadow-2xs flex gap-4 items-center"
                     >
-                      {/* MINIATURA AJUSTADA PARA NO CORTAR LA IMAGEN */}
                       <div className="w-16 h-16 bg-stone-50 rounded-xs border border-stone-100 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
                         <img
                           src={item.image}
@@ -250,6 +256,14 @@ export default function Carrito() {
                             </span>
                           )}
                         </div>
+
+                        {/* Muestra de Talle y Color */}
+                        {item.selectedVariant && (
+                          <p className="text-[11px] font-semibold text-rose-900 mt-0.5">
+                            Talle: {item.selectedVariant.size} | Color: {item.selectedVariant.color}
+                          </p>
+                        )}
+
                         <p className="text-xs text-stone-500 mt-0.5 font-light">
                           ${unitPrice.toLocaleString('es-AR')} c/u
                         </p>
@@ -257,7 +271,7 @@ export default function Carrito() {
                         <div className="flex items-center gap-3 mt-2">
                           <div className="flex items-center border border-stone-300 rounded-xs overflow-hidden bg-stone-50">
                             <button
-                              onClick={() => updateQuantity(item._id, -1)}
+                              onClick={() => updateQuantity(itemKey, -1)}
                               className="px-2.5 py-0.5 hover:bg-stone-200 text-stone-700 font-bold text-xs cursor-pointer"
                             >
                               -
@@ -266,7 +280,7 @@ export default function Carrito() {
                               {item.qty}
                             </span>
                             <button
-                              onClick={() => updateQuantity(item._id, 1)}
+                              onClick={() => updateQuantity(itemKey, 1)}
                               className="px-2.5 py-0.5 hover:bg-stone-200 text-stone-700 font-bold text-xs cursor-pointer"
                             >
                               +
@@ -274,7 +288,7 @@ export default function Carrito() {
                           </div>
 
                           <button
-                            onClick={() => removeFromCart(item._id)}
+                            onClick={() => removeFromCart(itemKey)}
                             className="text-[11px] text-rose-800 hover:text-rose-950 transition font-medium cursor-pointer"
                           >
                             Eliminar
@@ -419,7 +433,7 @@ export default function Carrito() {
               </form>
             )}
 
-            {/* PRODUCTOS RECOMENDADOS (COMPACTO) */}
+            {/* PRODUCTOS RECOMENDADOS */}
             {relatedProducts.length > 0 && (
               <div className="bg-white p-4 rounded-xs border border-rose-200/80 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between border-b border-rose-100 pb-2">
