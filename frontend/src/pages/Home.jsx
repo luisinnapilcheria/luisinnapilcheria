@@ -467,9 +467,14 @@ export default function Home() {
               💗
             </span>
             <span>por</span>
-            <span className="text-stone-800 font-bold tracking-widest">
-              GalmaTech
-            </span>
+            <a 
+              href="https://www.instagram.com/gs.tech.argentina" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-stone-800 font-bold tracking-widest hover:text-rose-900 transition underline underline-offset-2"
+            >
+              GS Tech
+            </a>
           </div>
         </div>
       </footer>
