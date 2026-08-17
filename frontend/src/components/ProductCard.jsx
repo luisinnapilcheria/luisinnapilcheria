@@ -9,15 +9,26 @@ export default function ProductCard({ product }) {
   const currentPrice = Number(product.priceRetail || product.price || 0);
 
   const availableVariants = (product.variants || []).filter((v) => v.stock > 0);
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    availableVariants.length > 0 ? availableVariants[0]._id : ''
-  );
+
+  // Inicializar seleccionando la primera variante disponible o la primera de la lista
+  const [selectedVariantId, setSelectedVariantId] = useState(() => {
+    if (availableVariants.length > 0) return availableVariants[0]._id;
+    if (product.variants && product.variants.length > 0) return product.variants[0]._id;
+    return '';
+  });
 
   // Obtener la variante seleccionada actualmente
   const selectedVariant = product.variants?.find((v) => v._id === selectedVariantId);
 
-  // Si la variante tiene una imagen propia, usamos esa; si no, la principal del producto
-  const currentDisplayImage = selectedVariant?.image || product.image;
+  // Buscar una foto de resguardo en las variantes si product.image no existe
+  const variantWithImage = product.variants?.find((v) => v.image && v.image.trim() !== '');
+
+  // Lógica de resguardo para la imagen (Evita renderizar campos vacíos)
+  const currentDisplayImage = 
+    selectedVariant?.image || 
+    product.image || 
+    variantWithImage?.image || 
+    '';
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
@@ -29,13 +40,13 @@ export default function ProductCard({ product }) {
 
     const productToCart = {
       ...product,
-      image: currentDisplayImage, // Envía la foto específica de la variante al carrito
+      image: currentDisplayImage,
       price: currentPrice,
       selectedVariant: selectedVariant ? {
         _id: selectedVariant._id,
         size: selectedVariant.size,
         color: selectedVariant.color,
-        image: selectedVariant.image
+        image: selectedVariant.image || currentDisplayImage
       } : null
     };
 
@@ -60,15 +71,22 @@ export default function ProductCard({ product }) {
         )}
       </div>
 
-      {/* CONTENEDOR DE FOTO (Cambia dinámicamente según la variante elegida) */}
+      {/* CONTENEDOR DE FOTO */}
       <div className="w-full aspect-square bg-stone-50 mb-4 overflow-hidden relative rounded-xs">
-        <img 
-          src={currentDisplayImage} 
-          alt={product.name} 
-          className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ease-out ${
-            isOutOfStock ? 'grayscale opacity-60' : ''
-          }`}
-        />
+        {currentDisplayImage ? (
+          <img 
+            src={currentDisplayImage} 
+            alt={product.name} 
+            className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ease-out ${
+              isOutOfStock ? 'grayscale opacity-60' : ''
+            }`}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-stone-400">
+            <span className="text-2xl">👗</span>
+            <span className="text-[10px] uppercase font-semibold mt-1">Sin foto</span>
+          </div>
+        )}
       </div>
 
       {/* DETALLES */}
