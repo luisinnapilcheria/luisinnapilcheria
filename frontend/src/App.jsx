@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import ReactGA from 'react-ga4'; // Google Analytics
 import { AuthContext } from './context/AuthContext';
 import { CartContext } from './context/CartContext';
@@ -52,6 +52,64 @@ export default function App() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-800 flex flex-col font-sans">
       
+      {/* BARRA DE NAVEGACIÓN PRINCIPAL (NAVBAR) */}
+      <header className="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-2xs">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center text-xs">
+          
+          {/* NAVEGACIÓN DE PÁGINAS PRINCIPALES */}
+          <nav className="flex items-center space-x-6 font-semibold uppercase tracking-wider text-stone-700">
+            <Link to="/" className="hover:text-rose-900 transition">
+              Inicio
+            </Link>
+            <Link to="/catalogo" className="hover:text-rose-900 transition">
+              Catálogo
+            </Link>
+          </nav>
+
+          {/* OPCIONES DERECHA: CARRITO Y PANEL/LOGIN */}
+          <div className="flex items-center space-x-4">
+            {/* BOTÓN CARRITO CON CONTADOR */}
+            <Link 
+              to="/carrito" 
+              className="relative bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5"
+            >
+              <span>🛒 Carrito</span>
+              {totalCount > 0 && (
+                <span className="bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  {totalCount}
+                </span>
+              )}
+            </Link>
+
+            {/* BOTÓN PANEL DE ADMIN / LOGIN / LOGOUT */}
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <Link 
+                  to="/admin" 
+                  className="bg-stone-900 text-white px-3 py-2 rounded-lg font-bold uppercase text-[10px] tracking-wider hover:bg-stone-800 transition"
+                >
+                  Panel Admin
+                </Link>
+                <button 
+                  onClick={logout}
+                  className="text-stone-500 hover:text-rose-700 font-semibold text-[11px] underline underline-offset-2 transition"
+                >
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <Link 
+                to="/login" 
+                className="text-stone-600 hover:text-stone-900 font-semibold uppercase text-[10px] tracking-wider transition"
+              >
+                Acceso Admin
+              </Link>
+            )}
+          </div>
+
+        </div>
+      </header>
+
       {/* CONTENIDO PRINCIPAL Y RUTAS */}
       <main className="flex-1">
         <Routes>
